@@ -41,6 +41,62 @@ Item names are in the full disk at x05ca570, in ASCII.
 			Yep! It's in there six times (3 times, then duplicated).
 				0x5ca5ab6
 
+		O - ku
+		75 - 70 - 78
+
+		Command "hikou" (hiragana)
+		cb - ba - b3
+		 y    h    a
+			Yep. Editing RAM 
+
+		Watching at 0x7028:
+			* 0xea9c: STA ($FA), Y @ $7d28
+				* Indirect Indexed, Y. 
+					* 
+			* $FA = 00 7d (7d00) + 28
+			* STA ($FA), Y: A = (big-endian value at FA) + Y.
+			* A = CB, the first byte. How'd it get there?
+				* Prev instruction: LDA $1808       @1808 = $CB.
+				* $1808 always has the next byte in it.
+					*
+
+Loop:
+LDA $1808
+STA ($FA, y)
+LDA $F8
+BNE $EAA4     ; (the lone DEC instruction below)
+DEC $F9
+DEC
+STA $F8
+ORA $F9       ; OR the accumulator with $F9
+BEQ $EAB5
+INY           ; increase Y
+BNE $EA99     ; LDA $1808
+
+Y acts as a counter, it increases as each byte is copied.
+$F8-$F9 decreases by one as each byte is copied. (It gets loaded into A to do this)
+The byte that gets loaded into 1808 when DEC happens (?) is one byte at a time coming from 0x5d93430 in the disk.
+	* hikou at 0x5d954e8, 0x5da8e97
+
+* $1800 changes from 88 ** to C8 ** when crossing the BNE, and C8 to 88 after the LDA $1808. How are these getting modified?
+	* The 1800 section has something to do with the CD, and its "ID locations".
+	* I have no idea where those particular bytes are coming from.
+
+
+
+
+		Watch at 7d29 - that's where "hikou" gets loaded
+			* 0x3add: LDA ($00),Y   @ $7d29 = $BA
+				* Y = 01
+				* 00 = 28
+				* Load the address at the value specified by Y. (really indrect)
+				
+		"mu" 8x8 character - what would be its hex representation?
+		* 20 f0 24 e2 a4 e4 e8
+			* Not found anywhere.
+
+* Menu options in RAM can be replaced with capital ASCII and they'll show up fine.
+
 # System Text
 * The game probably uses PCE system functions for the normal black/white kanji.
 	* Try corrupting the PCE card's kanji table and see what happens?
