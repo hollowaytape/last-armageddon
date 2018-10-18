@@ -106,3 +106,6 @@ The byte that gets loaded into 1808 when DEC happens (?) is one byte at a time c
 	* Some PCE hack mentioned putting JPEG subtitles in with a scene? Find that RHDN entry again.
 	* The split audio tracks don't include the voice-acting audio.
 	* Does the debug menu allow access to this audio?
+
+# Dumping
+* Any dumper would ideally also convert the [ku]['] to a [gu] character, maybe in another column.
