@@ -109,3 +109,20 @@ The byte that gets loaded into 1808 when DEC happens (?) is one byte at a time c
 
 # Dumping
 * Any dumper would ideally also convert the [ku]['] to a [gu] character, maybe in another column.
+
+# Error correcting codes
+* It appears that all of the data has a way of correcting itself after I edit it, and declares itself unrecoverable if it's edited too much.
+	* Are the fuzzy sections the error-correcting parts?
+	* Black+white kana segment: sector 41613
+	* Latin text after that:    sector 41614
+	* So yeah, the fuzzy sections occur before every sector.
+		* Sectors are 8 rows of tiles (128 8x8 2-bit tiles = 2048 bytes
+* The plain track2.iso doesn't have the error correcting fuzzy sections. 
+* CD-ROM Mode 1. 12 (Sync pattern)	3 (Address)	1 (Mode, 0x01)	2,048 (Data)	4 (Error detection)	8 (Reserved, zero)	276 (Error correction)
+	* A sector begins at 0x5cd77d0.
+		* Sync pattern: 00 FF FF FF FF FF FF FF FF FF FF 00
+		* Address: 09 16 66
+		* Mode: 01
+	* Error detection is a 32-bit CRC.
+		* Hm. With and without the header, the CRC-32 doesn't seem to match what I get from a generator online.
+	* Error correction is a RSPC (Reed Solomon)
