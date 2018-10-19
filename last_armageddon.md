@@ -48,6 +48,7 @@ Item names are in the full disk at x05ca570, in ASCII.
 		cb - ba - b3
 		 y    h    a
 			Yep. Editing RAM 
+			05D954E8
 
 		Watching at 0x7028:
 			* 0xea9c: STA ($FA), Y @ $7d28
@@ -126,3 +127,12 @@ The byte that gets loaded into 1808 when DEC happens (?) is one byte at a time c
 	* Error detection is a 32-bit CRC.
 		* Hm. With and without the header, the CRC-32 doesn't seem to match what I get from a generator online.
 	* Error correction is a RSPC (Reed Solomon)
+* One possible solution - in a reinserter, reinsert blocks as Mode 2, which doesn't have error detection/correction. More room for data that way too.
+
+* Scratch all that, use isopatch.
+	* isopatch hikou.lst LA7.iso /M1
+	* Try reinserting the whole data track?
+		* That works. Use track2.iso (has headers + CRCs and stuff). Edit it, then run:
+			* isopatch hikou.lst LA7.iso /M1
+			* (can rename hikou.lst to anything)
+			* Hm. This worked once but it's been crashing without patching the iso all the other times. Need to investigate further.
