@@ -107,6 +107,18 @@ The byte that gets loaded into 1808 when DEC happens (?) is one byte at a time c
 	* Some PCE hack mentioned putting JPEG subtitles in with a scene? Find that RHDN entry again.
 	* The split audio tracks don't include the voice-acting audio.
 	* Does the debug menu allow access to this audio?
+		* Yes
+* Offsets after ADPCM debug menu scene names:
+30 d1 0a 00 10 00 00
+80 f1 0a 00 48 00 00
+40 c2 0c 00 93 00 00
+98 55 0d 00 98 00 00
+c0 ed 0d 00 96 00 00
+b0 83 0e 00 22 00 00
+10 16 4e 00 63 00 00
+18 7a 10 00 5f 00 00
+f8 d9 10 00 14 01 00
+a0 ed 11 00 11 01 00
 
 # Dumping
 * Any dumper would ideally also convert the [ku]['] to a [gu] character, maybe in another column.
@@ -136,3 +148,22 @@ The byte that gets loaded into 1808 when DEC happens (?) is one byte at a time c
 			* isopatch hikou.lst LA7.iso /M1
 			* (can rename hikou.lst to anything)
 			* Hm. This worked once but it's been crashing without patching the iso all the other times. Need to investigate further.
+
+# Mapping
+## Track2.bin (track 2 with headers)
+(0x9448, 0x1373c),   # encyclopedia
+Lots of headers in there, sometimes interrupting the string. Need to test out editing/reinserting the un-headered iso instead.
+
+## track2.iso (no headers)
+(0x8000, 0x11000) - a segment of encyclopedia, gets interrupted at 0x11000
+(0x1124b, 0x11275) - main menu?
+(0x14000, 0x16000) - debug menus
+(0x21130, 0x2c950) - rest of encyclopedia
+
+
+# A weird pattern I noticed
+* There's a pattern around 0x1c7490 (in track2.bin) where there's 00*8, then roughly 0x100 later, FF*8. This occurs every 2352 bytes. Is this a header to ADPCM or something?
+	* The 2352 is definitely related to some CD thing.
+
+# More problems
+* Reinserting by full 0x930 tracks doesn't seem to work. The changes are getting overwritten again.
