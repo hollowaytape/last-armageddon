@@ -44,6 +44,9 @@ Item names are in the full disk at x05ca570, in ASCII.
 		O - ku
 		75 - 70 - 78
 
+		Battle command: te-i-se-i c3 b2 be b2
+
+
 		Command "hikou" (hiragana)
 		cb - ba - b3
 		 y    h    a
@@ -83,9 +86,6 @@ The byte that gets loaded into 1808 when DEC happens (?) is one byte at a time c
 	* The 1800 section has something to do with the CD, and its "ID locations".
 	* I have no idea where those particular bytes are coming from.
 
-
-
-
 		Watch at 7d29 - that's where "hikou" gets loaded
 			* 0x3add: LDA ($00),Y   @ $7d29 = $BA
 				* Y = 01
@@ -119,6 +119,7 @@ b0 83 0e 00 22 00 00
 18 7a 10 00 5f 00 00
 f8 d9 10 00 14 01 00
 a0 ed 11 00 11 01 00
+* Any kind of location I could get from this?
 
 # Dumping
 * Any dumper would ideally also convert the [ku]['] to a [gu] character, maybe in another column.
@@ -164,6 +165,20 @@ Lots of headers in there, sometimes interrupting the string. Need to test out ed
 # A weird pattern I noticed
 * There's a pattern around 0x1c7490 (in track2.bin) where there's 00*8, then roughly 0x100 later, FF*8. This occurs every 2352 bytes. Is this a header to ADPCM or something?
 	* The 2352 is definitely related to some CD thing.
+	* Maybe it's audio?
 
 # More problems
 * Reinserting by full 0x930 tracks doesn't seem to work. The changes are getting overwritten again.
+	* Neither does reinserting 0x800 length tracks.
+	* Try without the initial header line next?
+
+# Pointers
+* Before menu options, these values:
+28 7d
+2c 7d (+4) FLY
+2f 7d (+3) SE
+33 7d (+4) USE
+37 7d (+4) TRA
+3b 7d (+4) TOS
+40 7d (+5) EQUP
+47 7d (+7) ORDER_

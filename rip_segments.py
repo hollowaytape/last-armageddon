@@ -14,4 +14,4 @@ if __name__ == '__main__':
 
 with open('patched/edit.lst', 'w') as f:
     for s in SEGMENTS:
-        f.write(s.safe_offset() + '@' + s.filename + '\n')
+        f.write(s.safe_offset() + ',' + s.filename + '\n')
