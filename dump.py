@@ -3,14 +3,13 @@
     Based on a .tbl file which interprets characters.
 """
 import xlsxwriter
-from rominfo import ORIGINAL_DATA_TRACK, SEGMENTS
+from rominfo import ORIGINAL_DATA_TRACK, SEGMENTS, ImgSegment, SjisSegment
 
 class Dumpstring:
     def __init__(self, string, segment, loc):
         self.string = string
         self.segment = segment
         self.loc = loc
-
 
 workbook_FILENAME = 'LA_Text.xlsx'
 
@@ -28,58 +27,78 @@ if __name__ == '__main__':
                 token, meaning = line[0:1], bytes(line[3])
             token = int(token, base=16)
             meaning = meaning.rstrip(b'\n')
-            TABLE[token] = meaning 
+            TABLE[token] = meaning
 
     with open(ORIGINAL_DATA_TRACK, 'rb') as f:
-        with open('dump.txt', 'wb') as g:
-            file_contents = f.read()
-            for s in SEGMENTS:
-                seg = file_contents[s.start:s.stop]
-                cursor = 0
-                buf = b''
-                while cursor < len(seg):
-                    b = seg[cursor]
+        file_contents = f.read()
+        for s in SEGMENTS:
+            if isinstance(s, SjisSegment):
+                # Not yet implemented
+                continue
+            elif isinstance(s, ImgSegment):
+                # Don't dump this one
+                continue
+            seg = file_contents[s.start:s.stop]
+            cursor = 0
+            buf = b''
 
-                    # <END> control code. End the buffer
-                    if b == 0:
-                        if len(buf) > 2:
-                            print(hex(cursor), buf)
-                            loc = hex(cursor + s.start - len(buf)).encode()
-                            g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                            sjis_strings.append(Dumpstring(buf, s, cursor))
-                        buf = b''
-                    # ゛ increases the SJIS index of the previous char by 1
-                    elif b == 0x9e or b == 0xde:
-                        if buf:
-                            buf = buf[:-1] + (buf[-1] + 1).to_bytes(1, 'little')
-                    # ﾟ does it by 2
-                    elif b == 0x9f or b == 0xdf:
-                        if buf:
-                            buf = buf[:-1] + (buf[-1] + 2).to_bytes(1, 'little')
-                    # The normal case
-                    elif b in TABLE:
-                        buf += TABLE[b]
-                    # Something else. End the buffer
-                    else:
-                        if len(buf) > 2:
-                            print(hex(cursor), buf)
-                            loc = hex(cursor + s.start - len(buf)).encode()
-                            g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                            sjis_strings.append(Dumpstring(buf, s, cursor))
-                        buf = b''
-                    cursor += 1
+            # Length of the buffer: also includes diacritic marks
+            buflen = 0
+            while cursor < len(seg):
+                b = seg[cursor]
+
+                # <END> control code. End the buffer
+                if b == 0:
+                    if len(buf) > 2:
+                        print(hex(cursor), buf)
+                        loc = cursor - buflen + 1
+                        #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
+                        sjis_strings.append(Dumpstring(buf, s, loc))
+                    buf = b''
+                    buflen = 0
+                # ゛ increases the SJIS index of the previous char by 1
+                elif b == 0x9e or b == 0xde:
+                    if buf:
+                        buf = buf[:-1] + (buf[-1] + 1).to_bytes(1, 'little')
+                        buflen += 1
+                # ﾟ does it by 2
+                elif b == 0x9f or b == 0xdf:
+                    if buf:
+                        buf = buf[:-1] + (buf[-1] + 2).to_bytes(1, 'little')
+                        buflen += 1
+                # The normal case
+                elif b in TABLE:
+                    buf += TABLE[b]
+                    buflen += 1
+                # Something else. End the buffer
+                else:
+                    if len(buf) > 2:
+                        print(hex(cursor), buf)
+                        loc = cursor - buflen + 1
+                        #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
+                        sjis_strings.append(Dumpstring(buf, s, loc))
+                    buf = b''
+                    buflen = 0
+                cursor += 1
+
+            # Catch whatever's left in buf at the end of the segment
+            if len(buf) > 2:
+                print(hex(cursor), buf)
+                loc = cursor - buflen + 1
+                #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
+                sjis_strings.append(Dumpstring(buf, s, loc))
 
     worksheet = workbook.add_worksheet("LA")
     for s in sjis_strings:
 
-        worksheet.set_column('A:A', 20)
-        worksheet.write(0, 0, 'Offset', header)
+        worksheet.set_column('A:A', 15)
+        worksheet.write(0, 0, 'Offset (Total)', header)
 
-        worksheet.write(0, 1, 'Offset (Seg)', header)
+        worksheet.write(0, 1, 'Offset', header)
 
         # Block column should be narrow
-        worksheet.set_column('C:C', 10)
-        worksheet.write(0, 2, 'Segment', header)
+        worksheet.set_column('C:C', 20)
+        worksheet.write(0, 2, 'File', header)
 
         # JP column should be wide
         worksheet.set_column('D:D', 30)
@@ -104,7 +123,7 @@ if __name__ == '__main__':
 
             total_loc = '0x' + hex(s.loc + s.segment.start).lstrip('0x').zfill(8)
             loc = '0x' + hex(s.loc).lstrip('0x').zfill(3)
-            segment = str(s.segment.name)
+            segment = str(s.segment.filename)
             jp = s.string.decode('shift_jis_2004')
 
 
