@@ -53,11 +53,11 @@ SEGMENTS = [
 
     #Segment(0x5529b8f, 0x5529de0, "Dunno2"),
 
-    Segment(0x554ec88, 0x554ecd9, "Combat2"),   # This one shows up in combat
+    Segment(0x554ec8e, 0x554ecd9, "Combat2"),   # This one shows up in combat
 
     #Segment(0x555260d, 0x5552a30, "Dunno3"),
 
-    Segment(0x56090f5, 0x560911b, "Menu"),
+    Segment(0x56090f3, 0x560911b, "Menu"),
     #Segment(0x561be27, 0x561be46, "Submenu1"),  # this one definitely crashes.
     #Segment(0x561c5cb, 0x561c670, "Submenu2"),
     #Segment(0x561d1e4, 0x561d290, "Submenu3"),

@@ -51,7 +51,7 @@ if __name__ == '__main__':
                 if b == 0:
                     if len(buf) > 2:
                         print(hex(cursor), buf)
-                        loc = cursor - buflen + 1
+                        loc = cursor - buflen
                         #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
                         sjis_strings.append(Dumpstring(buf, s, loc))
                     buf = b''
@@ -74,7 +74,7 @@ if __name__ == '__main__':
                 else:
                     if len(buf) > 2:
                         print(hex(cursor), buf)
-                        loc = cursor - buflen + 1
+                        loc = cursor - buflen
                         #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
                         sjis_strings.append(Dumpstring(buf, s, loc))
                     buf = b''
@@ -84,7 +84,7 @@ if __name__ == '__main__':
             # Catch whatever's left in buf at the end of the segment
             if len(buf) > 2:
                 print(hex(cursor), buf)
-                loc = cursor - buflen + 1
+                loc = cursor - buflen
                 #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
                 sjis_strings.append(Dumpstring(buf, s, loc))
 
