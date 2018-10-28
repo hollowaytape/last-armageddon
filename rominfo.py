@@ -26,12 +26,13 @@ class ImgSegment(Segment):
 class SjisSegment(Segment):
     pass
 
+
+class PointerSegment(Segment):
+    pass
+
 # Offsets of locations in track2.bin (89,227 KB, headered).
 
-# TODO: Segments that are images or SJIS text can be subclasses.
-        # They shouldn't get dumped by the dumper.
 SEGMENTS = [
-    # TODO: One of these things broke stuff when I reinserted everything. Bit off more than I should have at once...
     #Segment(0x60c5, 0x63f0, "Names1"),
     #Segment(0x6520, 0x69e5, "Names2"),
     #SjisSegment(0x9310, 0x9b10, "Encyclo-1"),  # One sector of encyclopedia
@@ -43,17 +44,19 @@ SEGMENTS = [
 
     ImgSegment(0x55473c0, 0x554bbf0, "FontImg"),
 
-    Segment(0x5517af6, 0x5517de4, "NamesC"),  # the real names
+    Segment(0x5517af6, 0x5517b46, "NamesC"),
+    Segment(0x5517bb6, 0x5517de4, "NamesD"),  # the real names
 
-    #Segment(0x5518fe4, 0x551903c, "Spells1"),
-    #Segment(0x55192cc, 0x551936e, "Spells2"),
+    Segment(0x5518fe4, 0x551903c, "Spells1"),
+    Segment(0x55192cc, 0x5519370, "Spells2"),  # Splits at a 
     #Segment(0x55194a0, 0x55198f0, "Spells3"),
 
     #Segment(0x5526ef0, 0x5526f33, "Combat1"),  # maybe Combat2 is the right one?
 
     #Segment(0x5529b8f, 0x5529de0, "Dunno2"),
 
-    Segment(0x554ec8e, 0x554ecd9, "Combat2"),   # This one shows up in combat
+    Segment(0x554ec8e, 0x554ec96, "Combat2"),
+    Segment(0x554eca6, 0x554ecd9, "Combat3"),   # This one shows up in combat
 
     #Segment(0x555260d, 0x5552a30, "Dunno3"),
 

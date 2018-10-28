@@ -3,13 +3,26 @@
     Based on a .tbl file which interprets characters.
 """
 import xlsxwriter
-from rominfo import ORIGINAL_DATA_TRACK, SEGMENTS, ImgSegment, SjisSegment
+from rominfo import ORIGINAL_DATA_TRACK, SEGMENTS, ImgSegment, SjisSegment, PointerSegment
 
 class Dumpstring:
-    def __init__(self, string, segment, loc):
+    def __init__(self, string, segment, loc, length):
         self.string = string
         self.segment = segment
         self.loc = loc
+        self.length = length
+
+def index_of_subsequence(seq, subseq):
+    if subseq == []:
+        return None
+
+    for i in range(len(seq)):
+        sl = seq[i:i+len(subseq)]
+        if sl == subseq:
+            return i
+    return None
+
+LOOKBACK = 200
 
 workbook_FILENAME = 'LA_Text.xlsx'
 
@@ -38,9 +51,13 @@ if __name__ == '__main__':
             elif isinstance(s, ImgSegment):
                 # Don't dump this one
                 continue
+            elif isinstance(s, PointerSegment):
+                continue
             seg = file_contents[s.start:s.stop]
             cursor = 0
             buf = b''
+
+            seg_sjis_strings = []
 
             # Length of the buffer: also includes diacritic marks
             buflen = 0
@@ -50,10 +67,10 @@ if __name__ == '__main__':
                 # <END> control code. End the buffer
                 if b == 0:
                     if len(buf) > 2:
-                        print(hex(cursor), buf)
+                        #print(hex(cursor), buf)
                         loc = cursor - buflen
                         #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                        sjis_strings.append(Dumpstring(buf, s, loc))
+                        seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
                     buf = b''
                     buflen = 0
                 # ゛ increases the SJIS index of the previous char by 1
@@ -73,73 +90,131 @@ if __name__ == '__main__':
                 # Something else. End the buffer
                 else:
                     if len(buf) > 2:
-                        print(hex(cursor), buf)
+                        #print(hex(cursor), buf)
                         loc = cursor - buflen
                         #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                        sjis_strings.append(Dumpstring(buf, s, loc))
+                        seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
                     buf = b''
                     buflen = 0
                 cursor += 1
 
             # Catch whatever's left in buf at the end of the segment
             if len(buf) > 2:
-                print(hex(cursor), buf)
+                #print(hex(cursor), buf)
                 loc = cursor - buflen
                 #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                sjis_strings.append(Dumpstring(buf, s, loc))
+                seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
+
+            """
+                Find the pointer table for this series of strings.
+            """
+            # Find the sequence of increases in location.
+            diffs = []
+            for i, _ in enumerate(seg_sjis_strings):
+                if i+1 < len(seg_sjis_strings):
+                    diffs.append(seg_sjis_strings[i+1].loc - seg_sjis_strings[i].loc)
+            #print(diffs)
+
+            # Now look in the last X bytes for a series of little-endian numbers that
+            # increase in that precise sequence.
+            with open('original/track2.bin', 'rb') as f:
+                track = f.read()
+
+                cursor = s.start - LOOKBACK
+                track_vals = []
+                track_diffs = []
+                for b in range(0, LOOKBACK, 2):
+                    #print(track[cursor+b:cursor+b+2])
+                    val = int.from_bytes(track[cursor+b:cursor+b+2], byteorder='little')
+                    track_vals.append(val)
+                #print(track_vals)
+                for i, _ in enumerate(track_vals):
+                    if i+1 < len(track_vals):
+                        track_diffs.append(track_vals[i+1] - track_vals[i])
+            #print(track_diffs)
+
+            if diffs == []:
+                # The pointer table can't be found
+                pass
+            else:
+                ind = index_of_subsequence(track_diffs, diffs)
+                if ind is None:
+                    ind = index_of_subsequence(track_diffs, diffs[1:])
+                if ind is None:
+                    print("Couldn't find the pointers for this segment")
+                    # TODO: Try using an odd lookback for these
+                else:
+                    print(track_diffs)
+                    print([hex(thing) for thing in track_vals[ind:ind+len(diffs)]])
+                    table_start = s.start - LOOKBACK + (ind*2)
+                    pointer_location = table_start
+                    for sss in seg_sjis_strings:
+                        sss.pointer = pointer_location
+                        pointer_location += 2
+
+            sjis_strings += seg_sjis_strings
 
     worksheet = workbook.add_worksheet("LA")
     for s in sjis_strings:
 
-        worksheet.set_column('A:A', 15)
+        worksheet.set_column('A:A', 12)
         worksheet.write(0, 0, 'Offset (Total)', header)
 
         worksheet.write(0, 1, 'Offset', header)
 
+        worksheet.set_column('C:C', 12)
+        worksheet.write(0, 2, 'Pointer', header)
+
         # Block column should be narrow
-        worksheet.set_column('C:C', 20)
-        worksheet.write(0, 2, 'File', header)
+        worksheet.set_column('D:D', 20)
+        worksheet.write(0, 3, 'File', header)
 
         # JP column should be wide
-        worksheet.set_column('D:D', 30)
-        worksheet.write(0, 3, 'Japanese', header)
+        worksheet.set_column('E:E', 30)
+        worksheet.write(0, 4, 'Japanese', header)
 
         # JP_LEN column
-        worksheet.set_column('E:E', 5)
-        worksheet.write(0, 4, 'JP_Len', header)
+        worksheet.set_column('F:F', 5)
+        worksheet.write(0, 5, 'JP_Len', header)
 
         # EN column
-        worksheet.set_column('F:F', 30)
-        worksheet.write(0, 5, 'English', header)
+        worksheet.set_column('G:G', 30)
+        worksheet.write(0, 6, 'English', header)
 
         # EN_LEN column
-        worksheet.set_column('G:G', 5)
-        worksheet.write(0, 6, 'EN_Len', header)
+        worksheet.set_column('H:H', 5)
+        worksheet.write(0, 7, 'EN_Len', header)
 
         # Comments column
-        worksheet.write(0, 7, 'Comments', header)
+        worksheet.write(0, 8, 'Comments', header)
         row = 1
         for s in sjis_strings:
 
             total_loc = '0x' + hex(s.loc + s.segment.start).lstrip('0x').zfill(8)
             loc = '0x' + hex(s.loc).lstrip('0x').zfill(3)
+            #print(loc)
+            try:
+                pointer = '0x' + hex(s.pointer).lstrip('0x').zfill(8)
+            except AttributeError:
+                pointer = ''
             segment = str(s.segment.filename)
             jp = s.string.decode('shift_jis_2004')
+            length = s.length
 
 
             worksheet.write(row, 0, total_loc)
             worksheet.write(row, 1, loc)
-            worksheet.write(row, 2, segment)
-            worksheet.write(row, 3, jp)
+            worksheet.write(row, 2, pointer)
+            worksheet.write(row, 3, segment)
+            worksheet.write(row, 4, jp)
+            worksheet.write(row, 5, length)
 
             # Also write JP to the EN column, per kuoushi request
             #worksheet.write(row, 6, jp)
 
             # Add the JP/EN length formulas.
-            # TODO: Get a regex for this to ignore bracketed stuff
-            # Excel can't do regex like GSheets...
-            worksheet.write(row, 4, "=LEN(D%s)" % str(row+1))
-            worksheet.write(row, 6, "=LEN(F%s)" % str(row+1))
+            #worksheet.write(row, 5, "=LEN(E%s)" % str(row+1))
+            worksheet.write(row, 7, "=LEN(G%s)" % str(row+1))
             row += 1
 
     workbook.close()

@@ -120,6 +120,10 @@ b0 83 0e 00 22 00 00
 f8 d9 10 00 14 01 00
 a0 ed 11 00 11 01 00
 * Any kind of location I could get from this?
+* Scrolling through the list:
+	* First byte increments by 6
+	* Byte D1 increments up to 09, then increments byte D2 and resets
+	* FC and FE change to various different values
 
 # Dumping
 * Any dumper would ideally also convert the [ku]['] to a [gu] character, maybe in another column.
