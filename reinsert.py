@@ -15,6 +15,11 @@ Dump = DumpExcel(DUMP_XLS_PATH)
 
 copyfile('original/LA7.iso', 'patched/LA7.iso')
 
+# TODO: This is the worst possible way to specify them
+EDITED_IMG_SEGMENTS = [SEGMENTS[2], SEGMENTS[5], ]
+
+edited_segments = [] + EDITED_IMG_SEGMENTS
+
 # Populate the table
 TABLE = {}
 with open('LA_inverse.tbl', 'rb') as f:
@@ -33,7 +38,6 @@ with open('LA_inverse.tbl', 'rb') as f:
         TABLE[token] = meaning
 
 
-edited_segments = []
 for seg in SEGMENTS:
     if isinstance(seg, ImgSegment):
         continue

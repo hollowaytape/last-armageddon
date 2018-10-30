@@ -45,14 +45,7 @@ if __name__ == '__main__':
     with open(ORIGINAL_DATA_TRACK, 'rb') as f:
         file_contents = f.read()
         for s in SEGMENTS:
-            if isinstance(s, SjisSegment):
-                # Not yet implemented
-                continue
-            elif isinstance(s, ImgSegment):
-                # Don't dump this one
-                continue
-            elif isinstance(s, PointerSegment):
-                continue
+            print(s.name)
             seg = file_contents[s.start:s.stop]
             cursor = 0
             buf = b''
@@ -61,98 +54,150 @@ if __name__ == '__main__':
 
             # Length of the buffer: also includes diacritic marks
             buflen = 0
-            while cursor < len(seg):
-                b = seg[cursor]
 
-                # <END> control code. End the buffer
-                if b == 0:
-                    if len(buf) > 2:
-                        #print(hex(cursor), buf)
-                        loc = cursor - buflen
-                        #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                        seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
-                    buf = b''
-                    buflen = 0
-                # ゛ increases the SJIS index of the previous char by 1
-                elif b == 0x9e or b == 0xde:
-                    if buf:
-                        buf = buf[:-1] + (buf[-1] + 1).to_bytes(1, 'little')
-                        buflen += 1
-                # ﾟ does it by 2
-                elif b == 0x9f or b == 0xdf:
-                    if buf:
-                        buf = buf[:-1] + (buf[-1] + 2).to_bytes(1, 'little')
-                        buflen += 1
-                # The normal case
-                elif b in TABLE:
-                    buf += TABLE[b]
-                    buflen += 1
-                # Something else. End the buffer
-                else:
-                    if len(buf) > 2:
-                        #print(hex(cursor), buf)
-                        loc = cursor - buflen
-                        #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                        seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
-                    buf = b''
-                    buflen = 0
-                cursor += 1
+            # SJIS Segments
+            if isinstance(s, SjisSegment):
+                while cursor < len(seg):
+                    #print(cursor)
+                    b = seg[cursor]
+                    if b == 0:
+                        if len(buf) > 2:
+                            loc = cursor - len(buf)
+                            seg_sjis_strings.append(Dumpstring(buf, s, loc, len(buf)*2))
+                        buf = b''
+                        buflen = 0
+                    elif 0x80 <= b <= 0x9f or 0xe0 <= b <= 0xef:
+                        #print(bytes(contents[cursor]))
+                        buf += b.to_bytes(1, byteorder='little')
+                        cursor += 1
 
-            # Catch whatever's left in buf at the end of the segment
-            if len(buf) > 2:
-                #print(hex(cursor), buf)
-                loc = cursor - buflen
-                #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
-                seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
+                        b = seg[cursor]
+                        buf += b.to_bytes(1, byteorder='little')
+                        buflen += 2
+                    else:
+                        if len(buf) > 2:
+                            loc = cursor - len(buf)
+                            seg_sjis_strings.append(Dumpstring(buf, s, loc, len(buf)*2))
+                        buf = b''
+                        buflen = 0
 
-            """
-                Find the pointer table for this series of strings.
-            """
-            # Find the sequence of increases in location.
-            diffs = []
-            for i, _ in enumerate(seg_sjis_strings):
-                if i+1 < len(seg_sjis_strings):
-                    diffs.append(seg_sjis_strings[i+1].loc - seg_sjis_strings[i].loc)
-            #print(diffs)
+                    # Tablets are separated with long strings of 8140s, not 00s
+                    if len(buf) > 10:
+                        if buf[-10:] == b'\x81\x40\x81\x40\x81\x40\x81\x40\x81\x40':
+                            loc = cursor - len(buf) + 1
+                            seg_sjis_strings.append(Dumpstring(buf, s, loc, len(buf)*2))
+                            buf = b''
+                            buflen = 0
 
-            # Now look in the last X bytes for a series of little-endian numbers that
-            # increase in that precise sequence.
-            with open('original/track2.bin', 'rb') as f:
-                track = f.read()
+                    cursor += 1
 
-                cursor = s.start - LOOKBACK
-                track_vals = []
-                track_diffs = []
-                for b in range(0, LOOKBACK, 2):
-                    #print(track[cursor+b:cursor+b+2])
-                    val = int.from_bytes(track[cursor+b:cursor+b+2], byteorder='little')
-                    track_vals.append(val)
-                #print(track_vals)
-                for i, _ in enumerate(track_vals):
-                    if i+1 < len(track_vals):
-                        track_diffs.append(track_vals[i+1] - track_vals[i])
-            #print(track_diffs)
+                if len(buf) > 2:
+                    loc = cursor - len(buf)
+                    seg_sjis_strings.append(Dumpstring(buf, s, loc, len(buf)*2))
+                buf = b''
+                buflen = 0
 
-            if diffs == []:
-                # The pointer table can't be found
-                pass
+                # TODO: Find pointers for SJIS strings? Maybe not necessary
+                sjis_strings += seg_sjis_strings
+                
+            elif isinstance(s, ImgSegment):
+                # Don't dump this one
+                continue
+            elif isinstance(s, PointerSegment):
+                continue
             else:
-                ind = index_of_subsequence(track_diffs, diffs)
-                if ind is None:
-                    ind = index_of_subsequence(track_diffs, diffs[1:])
-                if ind is None:
-                    print("Couldn't find the pointers for this segment")
-                    # TODO: Try using an odd lookback for these
-                else:
-                    print(track_diffs)
-                    print([hex(thing) for thing in track_vals[ind:ind+len(diffs)]])
-                    table_start = s.start - LOOKBACK + (ind*2)
-                    pointer_location = table_start
-                    for sss in seg_sjis_strings:
-                        sss.pointer = pointer_location
-                        pointer_location += 2
+                while cursor < len(seg):
+                    b = seg[cursor]
 
-            sjis_strings += seg_sjis_strings
+                    # <END> control code. End the buffer
+                    if b == 0:
+                        if len(buf) > 2:
+                            #print(hex(cursor), buf)
+                            loc = cursor - buflen
+                            #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
+                            seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
+                        buf = b''
+                        buflen = 0
+                    # ゛ increases the SJIS index of the previous char by 1
+                    elif b == 0x9e or b == 0xde:
+                        if buf:
+                            buf = buf[:-1] + (buf[-1] + 1).to_bytes(1, 'little')
+                            buflen += 1
+                    # ﾟ does it by 2
+                    elif b == 0x9f or b == 0xdf:
+                        if buf:
+                            buf = buf[:-1] + (buf[-1] + 2).to_bytes(1, 'little')
+                            buflen += 1
+                    # The normal case
+                    elif b in TABLE:
+                        buf += TABLE[b]
+                        buflen += 1
+                    # Something else. End the buffer
+                    else:
+                        if len(buf) > 2:
+                            #print(hex(cursor), buf)
+                            loc = cursor - buflen
+                            #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
+                            seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
+                        buf = b''
+                        buflen = 0
+                    cursor += 1
+
+                # Catch whatever's left in buf at the end of the segment
+                if len(buf) > 2:
+                    #print(hex(cursor), buf)
+                    loc = cursor - buflen
+                    #g.write(s.name.encode() + b' ' + loc + b' ' + buf + b'\n')
+                    seg_sjis_strings.append(Dumpstring(buf, s, loc, buflen))
+
+                """
+                    Find the pointer table for this series of strings.
+                """
+                # Find the sequence of increases in location.
+                diffs = []
+                for i, _ in enumerate(seg_sjis_strings):
+                    if i+1 < len(seg_sjis_strings):
+                        diffs.append(seg_sjis_strings[i+1].loc - seg_sjis_strings[i].loc)
+                #print(diffs)
+
+                # Now look in the last X bytes for a series of little-endian numbers that
+                # increase in that precise sequence.
+                with open('original/track2.bin', 'rb') as f:
+                    track = f.read()
+
+                    cursor = s.start - LOOKBACK
+                    track_vals = []
+                    track_diffs = []
+                    for b in range(0, LOOKBACK, 2):
+                        #print(track[cursor+b:cursor+b+2])
+                        val = int.from_bytes(track[cursor+b:cursor+b+2], byteorder='little')
+                        track_vals.append(val)
+                    #print(track_vals)
+                    for i, _ in enumerate(track_vals):
+                        if i+1 < len(track_vals):
+                            track_diffs.append(track_vals[i+1] - track_vals[i])
+                #print(track_diffs)
+
+                if diffs == []:
+                    # The pointer table can't be found
+                    pass
+                else:
+                    ind = index_of_subsequence(track_diffs, diffs)
+                    if ind is None:
+                        ind = index_of_subsequence(track_diffs, diffs[1:])
+                    if ind is None:
+                        print("Couldn't find the pointers for this segment")
+                        # TODO: Try using an odd lookback for these
+                    else:
+                        print(track_diffs)
+                        print([hex(thing) for thing in track_vals[ind:ind+len(diffs)]])
+                        table_start = s.start - LOOKBACK + (ind*2)
+                        pointer_location = table_start
+                        for sss in seg_sjis_strings:
+                            sss.pointer = pointer_location
+                            pointer_location += 2
+
+                sjis_strings += seg_sjis_strings
 
     worksheet = workbook.add_worksheet("LA")
     for s in sjis_strings:
@@ -190,6 +235,9 @@ if __name__ == '__main__':
         row = 1
         for s in sjis_strings:
 
+            if s.string.strip(b'\x81\x40') == b'':
+                continue
+
             total_loc = '0x' + hex(s.loc + s.segment.start).lstrip('0x').zfill(8)
             loc = '0x' + hex(s.loc).lstrip('0x').zfill(3)
             #print(loc)
@@ -199,6 +247,7 @@ if __name__ == '__main__':
                 pointer = ''
             segment = str(s.segment.filename)
             jp = s.string.decode('shift_jis_2004')
+            #print(jp)
             length = s.length
 
 
