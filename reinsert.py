@@ -15,8 +15,11 @@ Dump = DumpExcel(DUMP_XLS_PATH)
 
 copyfile('original/LA7.iso', 'patched/LA7.iso')
 
-# TODO: This is the worst possible way to specify them
-EDITED_IMG_SEGMENTS = [SEGMENTS[2], SEGMENTS[5], ]
+# Stuff to always include
+EDITED_IMG_SEGMENTS = [
+    #ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
+    #ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
+]
 
 edited_segments = [] + EDITED_IMG_SEGMENTS
 
@@ -50,42 +53,52 @@ for seg in SEGMENTS:
             edited = True
 
     if edited:
+        print(seg.filename, "was edited")
         copyfile('original/%s' % seg.filename, 'patched/%s' % seg.filename)
         edited_segments.append(seg)
         with open('patched/%s' % seg.filename, 'rb+') as f:
             seg_filestring = f.read()
 
+            diff = 0
+
             for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):
-                print(t.japanese.decode('shift-jis'))
+                if not isinstance(seg, SjisSegment):
+                    print(t.japanese.decode('shift-jis'))
 
-                #for entry in TABLE:
-                #    print(entry, TABLE[entry])
-                tabled_jp = b''
-                buf = t.japanese
-                while buf:
-                    if len(buf) >= 2:
-                        #print(buf[0:2])
-                        if buf[0:2] in TABLE:
-                            tabled_jp += TABLE[buf[0:2]]
-                            buf = buf[2:]
+                    #for entry in TABLE:
+                    #    print(entry, TABLE[entry])
+                    tabled_jp = b''
+                    buf = t.japanese
+                    while buf:
+                        if len(buf) >= 2:
+                            #print(buf[0:2])
+                            if buf[0:2] in TABLE:
+                                tabled_jp += TABLE[buf[0:2]]
+                                buf = buf[2:]
+                            else:
+                                #print(buf[0].to_bytes(1, 'little'))
+                                tabled_jp += TABLE[buf[0].to_bytes(1, 'little')]
+                                buf = buf[1:]
                         else:
-                            #print(buf[0].to_bytes(1, 'little'))
                             tabled_jp += TABLE[buf[0].to_bytes(1, 'little')]
-                            buf = buf[1:]
-                    else:
-                        tabled_jp += TABLE[buf[0].to_bytes(1, 'little')]
-                        buf = b''
+                            buf = b''
 
-                # Text replacements if necessary
-                if t.english == b'':
-                    continue
-                print(tabled_jp)
+                    # Text replacements if necessary
+                    if t.english == b'':
+                        continue
+                    print(tabled_jp)
+                    t.japanese = tabled_jp
+
                 try:
-                    i = seg_filestring.index(tabled_jp)
+                    i = seg_filestring.index(t.japanese)
                     print(i, t.location)
-                    seg_filestring = seg_filestring.replace(tabled_jp, t.english, 1)
+                    this_diff = len(t.japanese) - len(t.english)
+                    seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
+
+                    # TODO: edit_pointers_in_range()
+                    diff += this_diff
                 except ValueError:
-                    print(tabled_jp, "(%s)" % t.japanese.decode('shift-jis'), "not found")
+                    print(t.japanese, "(%s)" % t.japanese.decode('shift-jis'), "not found")
             f.seek(0)
             f.write(seg_filestring)
 

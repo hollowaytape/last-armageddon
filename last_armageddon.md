@@ -119,11 +119,24 @@ b0 83 0e 00 22 00 00
 18 7a 10 00 5f 00 00
 f8 d9 10 00 14 01 00
 a0 ed 11 00 11 01 00
+
+BASECAMP = 10.51s
+GAMEOVER = 4.57s
+MAKAI = 19.59s
+TREE0 = 38.25s
+TREE1 = 40.53s
+
+
 * Any kind of location I could get from this?
 * Scrolling through the list:
 	* First byte increments by 6
 	* Byte D1 increments up to 09, then increments byte D2 and resets
 	* FC and FE change to various different values
+
+* Load the plain track into Audacity. (VOX ADPCM, normal sample rate, little endian)
+	* Clear vocals punctuated by horiffic noise (graphics & data). Graphics every time there's a scene change.
+	* Decrease the speed to around .36 of the original.
+
 
 # Dumping
 * Any dumper would ideally also convert the [ku]['] to a [gu] character, maybe in another column.
@@ -186,3 +199,17 @@ Lots of headers in there, sometimes interrupting the string. Need to test out ed
 3b 7d (+4) TOS
 40 7d (+5) EQUP
 47 7d (+7) ORDER_
+* Yep, must be pointers.
+
+# Unexplained crashes
+* Certain segments being reinserted, with very minor changes that don't change the length, are causing consistent crashes.
+	* Is it possible that isopatch's generated ECCs are incorrect? Need to check these.
+
+	* Successful EDC calculation on this site: http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
+		* Options: CRC-32, Custom, both reflections are True
+		* Polynomial:      0x8001801B
+		* Initial Value:   0x00000000
+		* Final xor Value: 0x00000000
+	* Hm. Well, these CRC values are correct at least.
+* So, VBinDiff shows two edited bytes at the beginning that I didn't ask it for. Why's it doing this?
+	* Restoring those two bytes and re-calculating the CRC-32 fixes the crash!
