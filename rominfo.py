@@ -82,6 +82,8 @@ SEGMENTS = [
 
     SjisSegment(0x5608ef9, 0x5608f09, "BattleStart"),
 
+    PointerSegment(0x56090e3, 0x56090f3, "MenuPointers"),
+
     Segment(0x56090f3, 0x560911b, "Menu"),
     Segment(0x561be27, 0x561be46, "Submenu1"),  # this one definitely crashes.
     #Segment(0x561c5cb, 0x561c670, "Submenu2"),

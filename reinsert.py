@@ -6,8 +6,8 @@
 import os
 from shutil import copyfile
 
-from rominfo import SEGMENTS, ImgSegment, SjisSegment
-from romtools.dump import DumpExcel
+from rominfo import SEGMENTS, ImgSegment, SjisSegment, PointerSegment
+from romtools.dump import DumpExcel, SegmentPointer
 
 DUMP_XLS_PATH = 'LA_Text.xlsx'
 
@@ -17,11 +17,23 @@ copyfile('original/LA7.iso', 'patched/LA7.iso')
 
 # Stuff to always include
 EDITED_IMG_SEGMENTS = [
-    #ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
-    #ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
+    ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
+    ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
 ]
 
+POINTER_SEGMENTS = [ps for ps in SEGMENTS if isinstance(ps, PointerSegment)]
+for ps in POINTER_SEGMENTS:
+    copyfile('original/%s' % ps.filename, 'patched/%s' % ps.filename)
+    with open('patched/%s' % ps.filename, 'rb') as f:
+        ps.string = f.read()
+
 edited_segments = [] + EDITED_IMG_SEGMENTS
+
+def segment_with_pointer(location):
+    for ps in POINTER_SEGMENTS:
+        if ps.start <= location <= ps.stop:
+            return ps
+    return None
 
 # Populate the table
 TABLE = {}
@@ -60,10 +72,17 @@ for seg in SEGMENTS:
             seg_filestring = f.read()
 
             diff = 0
+            #last_offset = 0
 
             for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):
                 if not isinstance(seg, SjisSegment):
                     print(t.japanese.decode('shift-jis'))
+                    print(t.pointer, segment_with_pointer(t.pointer))
+                    if t.pointer:
+                        # TODO: Need to point to something much lower
+                        t.pointer = SegmentPointer(segment=segment_with_pointer(t.pointer),
+                                                   pointer_location=t.pointer,
+                                                   text_location=t.location)
 
                     #for entry in TABLE:
                     #    print(entry, TABLE[entry])
@@ -92,15 +111,24 @@ for seg in SEGMENTS:
                 try:
                     i = seg_filestring.index(t.japanese)
                     print(i, t.location)
-                    this_diff = len(t.japanese) - len(t.english)
+                    this_diff = len(t.english) - len(t.japanese)
                     seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
 
-                    # TODO: edit_pointers_in_range()
+                    print("About to try to edit pointer")
+                    t.pointer.edit(diff)
+                    print("Edited pointer")
                     diff += this_diff
+                    # TODO: edit_pointers_in_range()
+                    #last_offset = t.location
                 except ValueError:
                     print(t.japanese, "(%s)" % t.japanese.decode('shift-jis'), "not found")
             f.seek(0)
             f.write(seg_filestring)
+
+for p in POINTER_SEGMENTS:
+    with open('patched/%s' % p.filename, 'rb+') as f:
+        f.write(p.string)
+    edited_segments.append(p)
 
 # Write the edit.lst file here instead of in rip_segments.py.
 # Use only the segments that got edited.

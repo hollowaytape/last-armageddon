@@ -193,6 +193,10 @@ if __name__ == '__main__':
                         print([hex(thing) for thing in track_vals[ind:ind+len(diffs)]])
                         table_start = s.start - LOOKBACK + (ind*2)
                         pointer_location = table_start
+                        # TODO: This is giving results shifted by two.
+                            # Menu.bin pointers should start at -e3 and last one should be -f3.
+                            # There are 9 strings... maybe the first one is pointed to from somewhere else?
+                            # Try skipping the first one entirely.
                         for sss in seg_sjis_strings:
                             sss.pointer = pointer_location
                             pointer_location += 2
