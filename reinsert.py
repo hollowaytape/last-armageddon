@@ -17,8 +17,8 @@ copyfile('original/LA7.iso', 'patched/LA7.iso')
 
 # Stuff to always include
 EDITED_IMG_SEGMENTS = [
-    #ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
-    #ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
+    ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
+    ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
 ]
 
 POINTER_SEGMENTS = [ps for ps in SEGMENTS if isinstance(ps, PointerSegment)]
@@ -78,7 +78,7 @@ for seg in SEGMENTS:
                 if not isinstance(seg, SjisSegment):
                     print(t.japanese.decode('shift-jis'))
                     #print(t.pointer, segment_with_pointer(t.pointer))
-                    if t.pointer:
+                    if t.pointer and diff != 0:
                         # TODO: Need to point to something much lower
                         t.pointer = SegmentPointer(segment=segment_with_pointer(t.pointer),
                                                    pointer_location=t.pointer,
@@ -114,7 +114,7 @@ for seg in SEGMENTS:
                     this_diff = len(t.english) - len(t.japanese)
                     seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
 
-                    if t.pointer is not None:
+                    if t.pointer is not None and diff != 0:
                         print("About to try to edit pointer")
                         t.pointer.edit(diff)
                         print("Edited pointer")

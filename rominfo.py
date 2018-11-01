@@ -33,12 +33,14 @@ class PointerSegment(Segment):
 # Offsets of locations in track2.bin (89,227 KB, headered).
 
 SEGMENTS = [
+    # Names1/2 don't appear to show up. And the encyclopedia part is unused.
+    # Maybe everything before MainMenu is unused?
     Segment(0x60cc, 0x63f0, "Names1"),
     Segment(0x6520, 0x69e5, "Names2"),
     #SjisSegment(0x9310, 0x9b10, "Encyclo-1"),  # One sector of encyclopedia
     SjisSegment(0x13abb, 0x13ae6, "MainMenu"),  # Uses SJIS, also crashes maybe
-    Segment(0x151de, 0x152d0, "NamesA"),
-    Segment(0x15400, 0x15afe, "NamesB"),
+    Segment(0x151de, 0x152d0, "EncycloNames1"),
+    Segment(0x15400, 0x15afe, "EncycloNames2"),
     #Segment(0x16f90, 0x174d7, "Debug"),
     #SjisSegment(0x25e70, 0x26670, "Encyclo-2"),
 
@@ -51,7 +53,6 @@ SEGMENTS = [
     ImgSegment(0x554aac0, 0x554b2c0, "FontBlack-80-bf"),
     ImgSegment(0x554b3f0, 0x554bbf0, "FontBlack-c0-ff"),
 
-    # TODO: Crash on entering battle. Will do this until isopatch fix
     Segment(0x5517af6, 0x5517b46, "NamesC"),
     Segment(0x5517bb6, 0x5517de4, "Skills"),
 
@@ -68,13 +69,19 @@ SEGMENTS = [
     SjisSegment(0x5524330, 0x5524b30, "Tablets7"),
 
     Segment(0x5524e83, 0x5524e8d, "Jin1"),
-    Segment(0x554c899, 0x554c8a4, "Jin2"),
 
     #Segment(0x5526ef0, 0x5526f33, "Combat1"),  # maybe Combat2 is the right one?
+
+    Segment(0x55293d8, 0x55294b0, "StatsMenu1"),
+
     Segment(0x5529b8f, 0x5529c0b, "CreationSystem"),
+    Segment(0x554c899, 0x554c8a4, "Jin2"),
     Segment(0x554ec8e, 0x554ec96, "Combat2"),
     PointerSegment(0x554ec96, 0x554eca6, "CombatPointers"),
     Segment(0x554eca6, 0x554ecd9, "Combat3"),   # This one shows up in combat
+    Segment(0x5551366, 0x555141e, "Dunno4"),
+    Segment(0x5551b1d, 0x5551b96, "Dunno5"),
+
     Segment(0x555260d, 0x5552a30, "Enemies"),
     SjisSegment(0x5608ef9, 0x5608f09, "BattleStart"),
     PointerSegment(0x56090e3, 0x56090f3, "MenuPointers"),
@@ -82,13 +89,14 @@ SEGMENTS = [
     Segment(0x561be27, 0x561be46, "Submenu1"),  # this one definitely crashes.
     Segment(0x561c5cb, 0x561c670, "Submenu2"),
     Segment(0x561c9fd, 0x561ca10, "SubmenuQuestions"),
-    #Segment(0x561d1e4, 0x561d290, "Submenu3"),
+    Segment(0x561d1e4, 0x561d290, "Submenu3"),
+    Segment(0x561d24b, 0x561d290, "StatsMenu2"),
     Segment(0x561d9db, 0x561da2f, "Submenu4"),
 
     Segment(0x561e054, 0x561e081, "Jin3"),
     Segment(0x561ebd8, 0x561ec0d, "Jin4"),
 
-    Segment(0x561f3c6, 0x561f3f5, "Dunno4"),
+    Segment(0x561f3c6, 0x561f3f5, "Dunno5"),
 
     Segment(0x561f7be, 0x561f850, "KeyItems"),
     Segment(0x561f9f6, 0x561fa20, "Equipment1"),
