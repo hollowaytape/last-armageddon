@@ -182,9 +182,13 @@ if __name__ == '__main__':
                     # The pointer table can't be found
                     pass
                 else:
+                    print("diffs are", diffs)
                     ind = index_of_subsequence(track_diffs, diffs)
+                    skip_first = False
                     if ind is None:
+                        print("ind was none, trying again")
                         ind = index_of_subsequence(track_diffs, diffs[1:])
+                        skip_first = True
                     if ind is None:
                         print("Couldn't find the pointers for this segment")
                         # TODO: Try using an odd lookback for these
@@ -198,6 +202,8 @@ if __name__ == '__main__':
                             # There are 9 strings... maybe the first one is pointed to from somewhere else?
                             # Try skipping the first one entirely.
                         for sss in seg_sjis_strings:
+                            if sss == seg_sjis_strings[0] and skip_first:
+                                continue
                             sss.pointer = pointer_location
                             pointer_location += 2
 

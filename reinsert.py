@@ -17,8 +17,8 @@ copyfile('original/LA7.iso', 'patched/LA7.iso')
 
 # Stuff to always include
 EDITED_IMG_SEGMENTS = [
-    ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
-    ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
+    #ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
+    #ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
 ]
 
 POINTER_SEGMENTS = [ps for ps in SEGMENTS if isinstance(ps, PointerSegment)]
@@ -77,7 +77,7 @@ for seg in SEGMENTS:
             for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):
                 if not isinstance(seg, SjisSegment):
                     print(t.japanese.decode('shift-jis'))
-                    print(t.pointer, segment_with_pointer(t.pointer))
+                    #print(t.pointer, segment_with_pointer(t.pointer))
                     if t.pointer:
                         # TODO: Need to point to something much lower
                         t.pointer = SegmentPointer(segment=segment_with_pointer(t.pointer),
@@ -114,14 +114,19 @@ for seg in SEGMENTS:
                     this_diff = len(t.english) - len(t.japanese)
                     seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
 
-                    print("About to try to edit pointer")
-                    t.pointer.edit(diff)
-                    print("Edited pointer")
+                    if t.pointer is not None:
+                        print("About to try to edit pointer")
+                        t.pointer.edit(diff)
+                        print("Edited pointer")
                     diff += this_diff
-                    # TODO: edit_pointers_in_range()
-                    #last_offset = t.location
+
                 except ValueError:
                     print(t.japanese, "(%s)" % t.japanese.decode('shift-jis'), "not found")
+
+            while diff < 0:
+                seg_filestring += b'\x00'
+                diff += 1
+            assert diff == 0
             f.seek(0)
             f.write(seg_filestring)
 
@@ -137,3 +142,27 @@ with open('patched/edit.lst', 'w') as lst:
         lst.write(s.safe_offset() + ',' + 'patched/' + s.filename + '\n')
 
 os.system("isopatch patched/edit.lst patched/LA7.iso /M1")
+
+
+"""
+    Try to undo the random other damage done by isopatch
+"""
+with open('original/LA7.iso', 'rb+') as original:
+    with open('patched/LA7.iso', 'rb+') as patched:
+        while True:
+            preamble = original.read(16)
+            preamble2 = patched.read(16)
+            data = original.read(2048)
+            data2 = patched.read(2048)
+            mode_1_stuff = original.read(288)
+            mode_1_stuff2 = patched.read(288)
+
+            #print(data[:20])
+            #print(data2[:20])
+            if data[:20] != data2[:20]:
+                print(data[:20])
+                print(data2[:20])
+
+
+            if preamble == b'':
+                break
