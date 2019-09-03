@@ -33,7 +33,7 @@ data = (
 )
 
 for s in data:
-    print(repr(s))
+    #print(repr(s))
     a = binascii.crc32(s)
     print('%08x' % (a & 0xffffffff))
     b = crc32(s)

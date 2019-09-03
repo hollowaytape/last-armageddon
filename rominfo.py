@@ -53,7 +53,10 @@ SEGMENTS = [
     ImgSegment(0x554aac0, 0x554b2c0, "FontBlack-80-bf"),
     ImgSegment(0x554b3f0, 0x554bbf0, "FontBlack-c0-ff"),
 
+    PointerSegment(0x5517ad2, 0x5517aea, "NamesCPointers"),
     Segment(0x5517af6, 0x5517b46, "NamesC"),
+
+    PointerSegment(0x5517b46, 0x5517bb6, "SkillsPointers"),
     Segment(0x5517bb6, 0x5517de4, "Skills"),
 
     Segment(0x5518fe4, 0x551903c, "SpellSystem"),
