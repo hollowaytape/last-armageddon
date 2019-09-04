@@ -108,6 +108,11 @@ for seg in SEGMENTS:
                     print(tabled_jp)
                     t.japanese = tabled_jp
 
+                else:
+                    # Reinsert the same string if it's SJIS
+                    if t.english == b'':
+                        t.english = t.japanese
+
                 try:
                     i = seg_filestring.index(t.japanese)
                     print(i, t.location)

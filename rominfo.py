@@ -37,12 +37,30 @@ SEGMENTS = [
     # Maybe everything before MainMenu is unused?
     Segment(0x60cc, 0x63f0, "Names1"),
     Segment(0x6520, 0x69e5, "Names2"),
-    #SjisSegment(0x9310, 0x9b10, "Encyclo-1"),  # One sector of encyclopedia
+    SjisSegment(0x9440, 0x9b10, "Encyclo-01"),  # One sector of encyclopedia
+    SjisSegment(0x9c40, 0xa440, "Encyclo-02"),  # One sector of encyclopedia
+    SjisSegment(0xa570, 0xad70, "Encyclo-03"),  # One sector of encyclopedia
+    SjisSegment(0xaea0, 0xb6a0, "Encyclo-04"),  # One sector of encyclopedia
+    SjisSegment(0xb7d0, 0xbfd0, "Encyclo-05"),  # One sector of encyclopedia
+    SjisSegment(0xc100, 0xc900, "Encyclo-06"),  # One sector of encyclopedia
+    SjisSegment(0xca30, 0xd230, "Encyclo-07"),  # One sector of encyclopedia
+    SjisSegment(0xd360, 0xdb60, "Encyclo-08"),  # One sector of encyclopedia
+    SjisSegment(0xdc90, 0xe490, "Encyclo-09"),  # One sector of encyclopedia
+    SjisSegment(0xe5c0, 0xedc0, "Encyclo-10"),  # One sector of encyclopedia
+    SjisSegment(0xeef0, 0xf6f0, "Encyclo-11"),  # One sector of encyclopedia
+    SjisSegment(0xf820, 0x10020, "Encyclo-12"),  # One sector of encyclopedia
+    SjisSegment(0x10150, 0x10950, "Encyclo-13"),  # One sector of encyclopedia
+    SjisSegment(0x10a80, 0x11280, "Encyclo-14"),  # One sector of encyclopedia
+    SjisSegment(0x113b0, 0x11bb0, "Encyclo-15"),  # One sector of encyclopedia
+    SjisSegment(0x11ce0, 0x124e0, "Encyclo-16"),  # One sector of encyclopedia
+    SjisSegment(0x12610, 0x12e10, "Encyclo-17"),  # One sector of encyclopedia
+    SjisSegment(0x12f40, 0x13740, "Encyclo-18"),  # One sector of encyclopedia
+
     SjisSegment(0x13abb, 0x13ae6, "MainMenu"),  # Uses SJIS, also crashes maybe
     Segment(0x151de, 0x152d0, "EncycloNames1"),
     Segment(0x15400, 0x15afe, "EncycloNames2"),
     #Segment(0x16f90, 0x174d7, "Debug"),
-    #SjisSegment(0x25e70, 0x26670, "Encyclo-2"),
+    SjisSegment(0x25e70, 0x26670, "Encyclo-4"),
 
     #ImgSegment(0x55473c0, 0x554bbf0, "FontImg"),
     ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
@@ -87,6 +105,7 @@ SEGMENTS = [
 
     Segment(0x555260d, 0x5552a30, "Enemies"),
     SjisSegment(0x5608ef9, 0x5608f09, "BattleStart"),
+    Segment(0x5608f09, 0x5608f0f, "TabletNum"),
     PointerSegment(0x56090e3, 0x56090f3, "MenuPointers"),
     Segment(0x56090f3, 0x560911b, "Menu"),
     Segment(0x561be27, 0x561be46, "Submenu1"),  # this one definitely crashes.
@@ -104,6 +123,7 @@ SEGMENTS = [
     Segment(0x561f7be, 0x561f850, "KeyItems"),
     Segment(0x561f9f6, 0x561fa20, "Equipment1"),
     Segment(0x561fb50, 0x561fcbd, "Equipment2"),
+
 ]
 
 # Font is in iso at 0x5cd37a0-0x5cd7fe0.

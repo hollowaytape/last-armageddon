@@ -22,7 +22,7 @@ def index_of_subsequence(seq, subseq):
             return i
     return None
 
-LOOKBACK = 200
+LOOKBACK = 400
 
 workbook_FILENAME = 'LA_Text.xlsx'
 
@@ -210,70 +210,75 @@ if __name__ == '__main__':
                 sjis_strings += seg_sjis_strings
 
     worksheet = workbook.add_worksheet("LA")
+
+    worksheet.set_column('A:A', 12)
+    worksheet.write(0, 0, 'Offset (Total)', header)
+
+    worksheet.write(0, 1, 'Offset', header)
+
+    worksheet.set_column('C:C', 12)
+    worksheet.write(0, 2, 'Pointer', header)
+
+    # Block column should be narrow
+    worksheet.set_column('D:D', 20)
+    worksheet.write(0, 3, 'File', header)
+
+    # JP column should be wide
+    worksheet.set_column('E:E', 30)
+    worksheet.write(0, 4, 'Japanese', header)
+
+    # JP_LEN column
+    worksheet.set_column('F:F', 5)
+    worksheet.write(0, 5, 'JP_Len', header)
+
+    # EN column
+    worksheet.set_column('G:G', 30)
+    worksheet.write(0, 6, 'English', header)
+
+    # EN_LEN column
+    worksheet.set_column('H:H', 5)
+    worksheet.write(0, 7, 'EN_Len', header)
+
+    # Comments column
+    worksheet.write(0, 8, 'Comments', header)
+    row = 1
+
     for s in sjis_strings:
 
-        worksheet.set_column('A:A', 12)
-        worksheet.write(0, 0, 'Offset (Total)', header)
+        if s.string.strip(b'\x81\x40') == b'':
+            continue
+        #print(row)
 
-        worksheet.write(0, 1, 'Offset', header)
-
-        worksheet.set_column('C:C', 12)
-        worksheet.write(0, 2, 'Pointer', header)
-
-        # Block column should be narrow
-        worksheet.set_column('D:D', 20)
-        worksheet.write(0, 3, 'File', header)
-
-        # JP column should be wide
-        worksheet.set_column('E:E', 30)
-        worksheet.write(0, 4, 'Japanese', header)
-
-        # JP_LEN column
-        worksheet.set_column('F:F', 5)
-        worksheet.write(0, 5, 'JP_Len', header)
-
-        # EN column
-        worksheet.set_column('G:G', 30)
-        worksheet.write(0, 6, 'English', header)
-
-        # EN_LEN column
-        worksheet.set_column('H:H', 5)
-        worksheet.write(0, 7, 'EN_Len', header)
-
-        # Comments column
-        worksheet.write(0, 8, 'Comments', header)
-        row = 1
-        for s in sjis_strings:
-
-            if s.string.strip(b'\x81\x40') == b'':
-                continue
-
-            total_loc = '0x' + hex(s.loc + s.segment.start).lstrip('0x').zfill(8)
-            loc = '0x' + hex(s.loc).lstrip('0x').zfill(3)
-            #print(loc)
-            try:
-                pointer = '0x' + hex(s.pointer).lstrip('0x').zfill(8)
-            except AttributeError:
-                pointer = ''
-            segment = str(s.segment.filename)
+        total_loc = '0x' + hex(s.loc + s.segment.start).lstrip('0x').zfill(8)
+        loc = '0x' + hex(s.loc).lstrip('0x').zfill(3)
+        #print(loc)
+        try:
+            pointer = '0x' + hex(s.pointer).lstrip('0x').zfill(8)
+        except AttributeError:
+            pointer = ''
+        segment = str(s.segment.filename)
+        #print(s.string)
+        try:
             jp = s.string.decode('shift_jis_2004')
-            #print(jp)
-            length = s.length
+        except UnicodeDecodeError:
+            jp = "I dunno"
+        #print(jp)
+        length = s.length
 
 
-            worksheet.write(row, 0, total_loc)
-            worksheet.write(row, 1, loc)
-            worksheet.write(row, 2, pointer)
-            worksheet.write(row, 3, segment)
-            worksheet.write(row, 4, jp)
-            worksheet.write(row, 5, length)
+        worksheet.write(row, 0, total_loc)
+        worksheet.write(row, 1, loc)
+        worksheet.write(row, 2, pointer)
+        worksheet.write(row, 3, segment)
+        worksheet.write(row, 4, jp)
+        worksheet.write(row, 5, length)
 
-            # Also write JP to the EN column, per kuoushi request
-            #worksheet.write(row, 6, jp)
+        # Also write JP to the EN column, per kuoushi request
+        #worksheet.write(row, 6, jp)
 
-            # Add the JP/EN length formulas.
-            #worksheet.write(row, 5, "=LEN(E%s)" % str(row+1))
-            worksheet.write(row, 7, "=LEN(G%s)" % str(row+1))
-            row += 1
+        # Add the JP/EN length formulas.
+        #worksheet.write(row, 5, "=LEN(E%s)" % str(row+1))
+        worksheet.write(row, 7, "=LEN(G%s)" % str(row+1))
+        row += 1
 
     workbook.close()

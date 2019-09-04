@@ -79,12 +79,12 @@ int WINAPI iso_patch_file(int iso_type, char *iso_file, int need_ecc_edc, int is
 						&sector[sector_start],
 						sector_length);			//修改缓硜E
 		
-		if ((sector[0x12] & 8) == 0)
-		{
-			//紒E馐欠袷鞘萆惹绻切丛趌eadout等区段，也自动改为数据扇区格式
-			sector[0x12] = 8;
-			sector[0x16] = 8;
-		}
+		//if ((sector[0x12] & 8) == 0)
+		//{
+		//	//紒E馐欠袷鞘萆惹绻切丛趌eadout等区段，也自动改为数据扇区格式
+		//	sector[0x12] = 8;
+		//	sector[0x16] = 8;
+		//}
 
 		if (need_ecc_edc != 0)eccedc_generate(sector, iso_type);//重藖EEDC/ECC
 
