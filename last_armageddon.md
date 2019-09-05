@@ -213,3 +213,9 @@ Lots of headers in there, sometimes interrupting the string. Need to test out ed
 	* Hm. Well, these CRC values are correct at least.
 * So, VBinDiff shows two edited bytes at the beginning that I didn't ask it for. Why's it doing this?
 	* Restoring those two bytes and re-calculating the CRC-32 fixes the crash!
+
+# System printing functions
+* "Gargoyle" (82 66 82 81 82 92 82 87...) is at b57c.
+
+ora $20 (12 20) -> nop nop
+lda $20 (b2 20) -> lda #$82 (a9 82)

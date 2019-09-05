@@ -3,7 +3,7 @@
     Based on a .tbl file which interprets characters.
 """
 import xlsxwriter
-from rominfo import ORIGINAL_DATA_TRACK, SEGMENTS, ImgSegment, SjisSegment, PointerSegment
+from rominfo import ORIGINAL_DATA_TRACK, SEGMENTS, ImgSegment, SjisSegment, PointerSegment, CodeSegment
 
 class Dumpstring:
     def __init__(self, string, segment, loc, length):
@@ -61,7 +61,7 @@ if __name__ == '__main__':
                     #print(cursor)
                     b = seg[cursor]
                     if b == 0:
-                        if len(buf) > 2:
+                        if len(buf) > 0:
                             loc = cursor - len(buf)
                             seg_sjis_strings.append(Dumpstring(buf, s, loc, len(buf)*2))
                         buf = b''
@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
                     cursor += 1
 
-                if len(buf) > 2:
+                if len(buf) > 0:
                     loc = cursor - len(buf)
                     seg_sjis_strings.append(Dumpstring(buf, s, loc, len(buf)*2))
                 buf = b''
@@ -105,6 +105,9 @@ if __name__ == '__main__':
                 continue
             elif isinstance(s, PointerSegment):
                 continue
+            elif isinstance(s, CodeSegment):
+                continue
+
             else:
                 while cursor < len(seg):
                     b = seg[cursor]

@@ -13,13 +13,16 @@ class Segment:
         self.iso_start = DATA_START_IN_ISO + start
         self.iso_stop = DATA_START_IN_ISO + stop
 
-        self.filename = '%s_%s.bin' % (hex(start)[2:].zfill(8), name)
+        self.filename = '%s_%s.bin' % (name, hex(start)[2:].zfill(8),)
 
     def safe_offset(self):
         return hex(self.iso_start)[2:].zfill(8)
 
 
 class ImgSegment(Segment):
+    pass
+
+class CodeSegment(Segment):
     pass
 
 
@@ -101,6 +104,10 @@ SEGMENTS = [
     PointerSegment(0x554ec96, 0x554eca6, "CombatPointers"),
     Segment(0x554eca6, 0x554ecd9, "Combat3"),   # This one shows up in combat
     Segment(0x5551366, 0x555141e, "Dunno4"),
+
+    # Code for displaying SJIS text. Thing to edit is towards the beginning
+    CodeSegment(0x5516fe0, 0x55177e0, "SjisTextCode"),
+
     Segment(0x5551b1d, 0x5551b96, "Dunno5"),
 
     Segment(0x555260d, 0x5552a30, "Enemies"),

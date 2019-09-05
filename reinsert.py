@@ -6,7 +6,7 @@
 import os
 from shutil import copyfile
 
-from rominfo import SEGMENTS, ImgSegment, SjisSegment, PointerSegment
+from rominfo import SEGMENTS, ImgSegment, SjisSegment, PointerSegment, CodeSegment
 from romtools.dump import DumpExcel, SegmentPointer
 
 DUMP_XLS_PATH = 'LA_Text.xlsx'
@@ -27,7 +27,33 @@ for ps in POINTER_SEGMENTS:
     with open('patched/%s' % ps.filename, 'rb') as f:
         ps.string = f.read()
 
-edited_segments = [] + EDITED_IMG_SEGMENTS
+CODE_SEGMENTS = [cs for cs in SEGMENTS if isinstance(cs, CodeSegment)]
+for cs in CODE_SEGMENTS:
+    # Copy the code sgement
+    copyfile('original/%s' % cs.filename, 'patched/%s' % cs.filename)
+    with open('patched/%s' % cs.filename, 'rb') as f:
+        ps.string = f.read()
+
+    # Apply edits to the copied code segment
+    with open('patched/%s' % cs.filename, 'rb+') as f:
+        if cs.name == "SjisTextCode":
+            edits = [
+                (0x5516ffb, b'\xa9\x82'),  # Replace LDA $20 with LDA #$82
+                #(0x5516fff, b'\xea\xea'),  # Nop out "inc $20"
+
+                # Skip "inc $20", do some more instructions, and add #$1f right after $20 gets loaded
+                (0x5516fff, b'\xd0\x02\xe6\x21\xb2\x20\x69\x1f'),  
+            ]
+        for e in edits:
+            print("Doing an edit")
+            print(e)
+            abs_address, new_code = e[0], e[1]
+            local_address = abs_address - cs.start
+            print(local_address)
+            f.seek(local_address, 0)
+            f.write(new_code)
+
+edited_segments = [] + EDITED_IMG_SEGMENTS + CODE_SEGMENTS
 
 def segment_with_pointer(location):
     for ps in POINTER_SEGMENTS:
@@ -49,12 +75,14 @@ with open('LA_inverse.tbl', 'rb') as f:
         elif len(meaning) == 4:
             meaning = int(meaning, base=16).to_bytes(2, 'big')
 
-        print(token, meaning)
+        #print(token, meaning)
         TABLE[token] = meaning
 
 
 for seg in SEGMENTS:
     if isinstance(seg, ImgSegment):
+        continue
+    elif isinstance(seg, CodeSegment):
         continue
     edited = False
     print(seg.filename)
@@ -93,6 +121,7 @@ for seg in SEGMENTS:
                             #print(buf[0:2])
                             if buf[0:2] in TABLE:
                                 tabled_jp += TABLE[buf[0:2]]
+                                print(TABLE[buf[0:2]])
                                 buf = buf[2:]
                             else:
                                 #print(buf[0].to_bytes(1, 'little'))
@@ -109,9 +138,22 @@ for seg in SEGMENTS:
                     t.japanese = tabled_jp
 
                 else:
-                    # Reinsert the same string if it's SJIS
+                    # Make the lowercase letters safe
+                    safe_string = b''
+                    print("Processing a sjis string")
+                    for c in t.english:
+                        if c > 0x60:
+                            safe_string += (c + 1).to_bytes(1, 'little')
+                        else:
+                            safe_string += c.to_bytes(1, 'little')
+                    t.english = safe_string
+
+                    # Reinsert the same string if no translation
+                    
                     if t.english == b'':
                         t.english = t.japanese
+
+
 
                 try:
                     i = seg_filestring.index(t.japanese)
@@ -120,12 +162,15 @@ for seg in SEGMENTS:
                     seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
 
                     if t.pointer is not None and diff != 0:
-                        print("About to try to edit pointer")
+                        #print("About to try to edit pointer")
                         t.pointer.edit(diff)
                         print("Edited pointer")
                     diff += this_diff
 
                 except ValueError:
+                    for c in t.japanese:
+                        print(hex(c)),
+                    print()
                     print(t.japanese, "(%s)" % t.japanese.decode('shift-jis'), "not found")
 
             while diff < 0:
