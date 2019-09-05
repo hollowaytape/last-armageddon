@@ -103,10 +103,12 @@ SEGMENTS = [
     Segment(0x554ec8e, 0x554ec96, "Combat2"),
     PointerSegment(0x554ec96, 0x554eca6, "CombatPointers"),
     Segment(0x554eca6, 0x554ecd9, "Combat3"),   # This one shows up in combat
-    Segment(0x5551366, 0x555141e, "Dunno4"),
+    Segment(0x5551366, 0x55513a7, "Dunno4"),
+    Segment(0x55513b7, 0x555141e, "StatUps"),
 
     # Code for displaying SJIS text. Thing to edit is towards the beginning
-    CodeSegment(0x5516fe0, 0x55177e0, "SjisTextCode"),
+    CodeSegment(0x5516e60, 0x5516e70, "SjisTextCode-1"),
+    CodeSegment(0x5516ff5, 0x5517040, "SjisTextCode-2"),
 
     Segment(0x5551b1d, 0x5551b96, "Dunno5"),
 

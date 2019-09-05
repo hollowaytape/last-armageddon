@@ -217,5 +217,27 @@ Lots of headers in there, sometimes interrupting the string. Need to test out ed
 # System printing functions
 * "Gargoyle" (82 66 82 81 82 92 82 87...) is at b57c.
 
-ora $20 (12 20) -> nop nop
-lda $20 (b2 20) -> lda #$82 (a9 82)
+Read every byte and prepend it with 82:
+After this code: ee 19 22 ee 19 22 4c 96 37 a0 01 b1 20 12 20 f0 16
+381b: lda $20 (b2 20) -> lda #$82 (a9 82)
+381f: inc $20 (e6 20) -> nop nop (ea ea)
+
+Next step: add 1f to the $21 value. (adc )
+381b: adc $1f (69 1f)
+381d: lda #$82 (a9 82)
+381f: nop nop (ea ea)
+
+Next steps after this: Add the condition where you check if it's lowercase, and if so add 1. (Optional)
+Figure out how to get proper punctuation. Currently all the spaces just repeat the last character, and all the punctuation is coming out Greek.
+	Need to find a proper map of all the characters.
+		Well, it's just SJIS. I need to use proper sjis
+		And also figure out if there's any ascii in there I guess.
+	Need to do something like:
+	381b: cmp #$40 (c9 40)
+	381d: lda #$81 (81 a9)
+	381f: sta $f9 (85 f9)
+	3821: bcc +02 (90 02)
+	3823: inc $f9 (36 f9)
+
+
+$21 seems to be the row number. Messing with one of the binary shift operations done to it makes the rows smaller, but not in a helpful way.

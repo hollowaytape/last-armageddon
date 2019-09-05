@@ -7,6 +7,7 @@ import os
 from shutil import copyfile
 
 from rominfo import SEGMENTS, ImgSegment, SjisSegment, PointerSegment, CodeSegment
+from asm import EDITS
 from romtools.dump import DumpExcel, SegmentPointer
 
 DUMP_XLS_PATH = 'LA_Text.xlsx'
@@ -36,22 +37,14 @@ for cs in CODE_SEGMENTS:
 
     # Apply edits to the copied code segment
     with open('patched/%s' % cs.filename, 'rb+') as f:
-        if cs.name == "SjisTextCode":
-            edits = [
-                (0x5516ffb, b'\xa9\x82'),  # Replace LDA $20 with LDA #$82
-                #(0x5516fff, b'\xea\xea'),  # Nop out "inc $20"
-
-                # Skip "inc $20", do some more instructions, and add #$1f right after $20 gets loaded
-                (0x5516fff, b'\xd0\x02\xe6\x21\xb2\x20\x69\x1f'),  
-            ]
-        for e in edits:
-            print("Doing an edit")
-            print(e)
+        for e in EDITS:
             abs_address, new_code = e[0], e[1]
-            local_address = abs_address - cs.start
-            print(local_address)
-            f.seek(local_address, 0)
-            f.write(new_code)
+            if cs.start <= abs_address <= cs.stop:
+                print("Doing an edit")
+                local_address = abs_address - cs.start
+                print(local_address)
+                f.seek(local_address, 0)
+                f.write(new_code)
 
 edited_segments = [] + EDITED_IMG_SEGMENTS + CODE_SEGMENTS
 
@@ -141,15 +134,32 @@ for seg in SEGMENTS:
                     # Make the lowercase letters safe
                     safe_string = b''
                     print("Processing a sjis string")
+
+                    marks = [b'\x40', b'\x49', b'\x68', b'\x94', b'\x90', b'\x93', b'\x95', b'\x66',
+                             b'\x69', b'\x6a', b'\x96', b'\x7b', b'\x43', b'\x5b', b'\x44', b'\x5e', ]
+
+                    marks2 = [b'\x46', b'\x47', b'\x83', b'\x81', b'\x84', b'\x48', b'\x97']
+
                     for c in t.english:
-                        if c > 0x60:
-                            safe_string += (c + 1).to_bytes(1, 'little')
+                        # Punctuation 1
+                        if c < 0x30:
+                            safe_string += marks[c-0x20]
+                        # Numbers
+                        elif c <= 0x39:
+                            safe_string += (c + 0x1f).to_bytes(1, 'little')
+                        # Punctuation 2
+                        elif c <= 0x40:
+                            safe_string += marks2[c-0x3a]
+                        # Uppercase
+                        elif c <= 0x60:
+                            safe_string += (c + 0x1f).to_bytes(1, 'little')
+                        # Lowercase
                         else:
-                            safe_string += c.to_bytes(1, 'little')
+                            safe_string += (c + 0x20).to_bytes(1, 'little')
                     t.english = safe_string
 
                     # Reinsert the same string if no translation
-                    
+
                     if t.english == b'':
                         t.english = t.japanese
 
