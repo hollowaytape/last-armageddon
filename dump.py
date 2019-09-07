@@ -168,6 +168,7 @@ if __name__ == '__main__':
                 with open('original/track2.bin', 'rb') as f:
                     track = f.read()
 
+                    # TODO: Really, need to try this with an odd number too
                     cursor = s.start - LOOKBACK
                     track_vals = []
                     track_diffs = []

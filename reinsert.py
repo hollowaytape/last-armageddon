@@ -18,13 +18,12 @@ copyfile('original/LA7.iso', 'patched/LA7.iso')
 
 # Stuff to always include
 EDITED_IMG_SEGMENTS = [
-    ImgSegment(0x55476c0, 0x5547ba0, "FontBlue-00-3f"),
-    ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
-    #ImgSegment(0x5548f30, 0x5549730, "FontBlue-c0-ff"),
-
-    ImgSegment(0x5549b80, 0x554a060, "FontBlack-00-3f"),
-    ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
-    ImgSegment(0x554b3f0, 0x554bbf0, "FontBlack-c0-ff"),
+    ImgSegment(0x4a41b20, 0x4a42000, 'FontBlue-00-3f'),
+    ImgSegment(0x4a42000, 0x4a42800, 'FontBlue-40-7f'),
+    #ImgSegment(0x4a43000, 0x4a43800, 'FontBlue-c0-ff'),
+    ImgSegment(0x4a43b20, 0x4a44000, 'FontBlack-00-3f'),
+    ImgSegment(0x4a44000, 0x4a44800, 'FontBlack-40-7f'),
+    ImgSegment(0x4a45000, 0x4a45800, 'FontBlack-c0-ff'),
 ]
 
 POINTER_SEGMENTS = [ps for ps in SEGMENTS if isinstance(ps, PointerSegment)]
@@ -83,6 +82,9 @@ for seg in SEGMENTS:
         continue
     elif isinstance(seg, CodeSegment):
         continue
+    # TODO: Try this later. Not sure why these would get edited here
+    #elif isinstance(seg, PointerSegment):
+    #    continue
     edited = False
     print(seg.filename)
     for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):

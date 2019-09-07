@@ -241,3 +241,12 @@ Figure out how to get proper punctuation. Currently all the spaces just repeat t
 
 
 $21 seems to be the row number. Messing with one of the binary shift operations done to it makes the rows smaller, but not in a helpful way.
+
+TODO: Need to edit stuff like commas and numbers in the font, to make them fit better
+* Palette:
+	* Black is color 0 (50)
+	* Grey is color e (5e)
+	* Background is color 9 (59)
+
+TODO: How should I deal with text that stretches across sector boundaries?
+	Ideally I should be working with the plain data track. Can isopatch reinsert stuff that is longer than one sector? Let's try.

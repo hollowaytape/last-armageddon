@@ -14,7 +14,7 @@ EDITS = [
     #    dec $f9
     #"""
 
-    (0x5516ff5, b'\xb2\x20\xea\xea\xf0\x16\xc9\x60\xa9\x82\x85\xf9\xb0\x02\xc6\xf9'),
+    (0x4a17815, b'\xb2\x20\xea\xea\xf0\x16\xc9\x60\xa9\x82\x85\xf9\xb0\x02\xc6\xf9'),
 
 
     # Skip "inc $20", do some more instructions, and add #$1f right after $20 gets loaded
@@ -28,9 +28,9 @@ EDITS = [
     #    stz $f7    ; get more space by using stz instead of lda #$00, sta, etc
     #    stz $0000
     #"""
-    (0x5516e60, b'\xa9\x01\x85\xff\x20\x60\xe0\x64\xf7\x9c\x00\x00'),
+    (0x4a177b0, b'\xa9\x01\x85\xff\x20\x60\xe0\x64\xf7\x9c\x00\x00'),
 
     # bra 3815   ; jump back to the LDA ($20) instruction, not something else
-    (0x5517030, b'\xc4'),
+    (0x4a17850, b'\xc4'),
 
 ]
