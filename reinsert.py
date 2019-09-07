@@ -18,12 +18,18 @@ copyfile('original/LA7.iso', 'patched/LA7.iso')
 
 # Stuff to always include
 EDITED_IMG_SEGMENTS = [
+    ImgSegment(0x55476c0, 0x5547ba0, "FontBlue-00-3f"),
     ImgSegment(0x5547cd0, 0x55484d0, "FontBlue-40-7f"),
+    #ImgSegment(0x5548f30, 0x5549730, "FontBlue-c0-ff"),
+
+    ImgSegment(0x5549b80, 0x554a060, "FontBlack-00-3f"),
     ImgSegment(0x554a190, 0x554a990, "FontBlack-40-7f"),
+    ImgSegment(0x554b3f0, 0x554bbf0, "FontBlack-c0-ff"),
 ]
 
 POINTER_SEGMENTS = [ps for ps in SEGMENTS if isinstance(ps, PointerSegment)]
 for ps in POINTER_SEGMENTS:
+    print(ps)
     copyfile('original/%s' % ps.filename, 'patched/%s' % ps.filename)
     with open('patched/%s' % ps.filename, 'rb') as f:
         ps.string = f.read()
@@ -33,7 +39,7 @@ for cs in CODE_SEGMENTS:
     # Copy the code sgement
     copyfile('original/%s' % cs.filename, 'patched/%s' % cs.filename)
     with open('patched/%s' % cs.filename, 'rb') as f:
-        ps.string = f.read()
+        cs.string = f.read()
 
     # Apply edits to the copied code segment
     with open('patched/%s' % cs.filename, 'rb+') as f:
@@ -186,6 +192,7 @@ for seg in SEGMENTS:
             while diff < 0:
                 seg_filestring += b'\x00'
                 diff += 1
+            print(seg.filename)
             assert diff == 0
             f.seek(0)
             f.write(seg_filestring)
