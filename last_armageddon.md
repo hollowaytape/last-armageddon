@@ -239,6 +239,13 @@ Figure out how to get proper punctuation. Currently all the spaces just repeat t
 	3821: bcc +02 (90 02)
 	3823: inc $f9 (36 f9)
 
+I think 00 00 00 00 is a divider between records, maybe there are no pointers?
+	TODO: Did I mess with the code that checks for 4 consecutive 00s?
+		No, it's probably pointers. Text seems to be ending at the right places, if not beginning at the right ones.
+		Second entry begins at byte 14a
+		Third is at 256
+		Fourth is at 360
+		Pointer-detector isn't finding this because it's looking at the diffs of each consecutive string. Or not looking for sjis pointers at all...
 
 $21 seems to be the row number. Messing with one of the binary shift operations done to it makes the rows smaller, but not in a helpful way.
 

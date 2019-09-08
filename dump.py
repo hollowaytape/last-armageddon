@@ -165,7 +165,7 @@ if __name__ == '__main__':
 
                 # Now look in the last X bytes for a series of little-endian numbers that
                 # increase in that precise sequence.
-                with open('original/track2.bin', 'rb') as f:
+                with open('original/track2_plain.bin', 'rb') as f:
                     track = f.read()
 
                     # TODO: Really, need to try this with an odd number too

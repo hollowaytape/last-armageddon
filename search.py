@@ -2,6 +2,8 @@
 
 import re
 
+search_string = 'こうげきは'
+
 if __name__ == "__main__":
 
     # Populate the table
@@ -20,18 +22,17 @@ if __name__ == "__main__":
 
             #print(token, meaning)
             TABLE[token] = meaning
-            print(token, meaning)
+            #print(token, meaning)
 
-    search_string = 'ンをてにいれた'
     encoded = b''
 
     sjis = search_string.encode('shift-jis')
     for i in range(len(sjis))[::2]:
         c = sjis[i:i+2]
-        print(TABLE[c])
+        #print(TABLE[c])
         encoded += TABLE[c]
 
-    print(encoded)
+    #print(encoded)
 
     with open('original/track2_plain.bin', 'rb') as f:
         contents = f.read()

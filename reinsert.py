@@ -6,9 +6,11 @@
 import os
 from shutil import copyfile
 
-from rominfo import SEGMENTS, ImgSegment, SjisSegment, PointerSegment, CodeSegment
+from rominfo import SEGMENTS, ORIGINAL_DATA_TRACK, ImgSegment, SjisSegment, PointerSegment, CodeSegment
 from asm import EDITS
 from romtools.dump import DumpExcel, SegmentPointer
+
+MAPPING_MODE = False
 
 DUMP_XLS_PATH = 'LA_Text.xlsx'
 
@@ -26,12 +28,12 @@ EDITED_IMG_SEGMENTS = [
     ImgSegment(0x4a45000, 0x4a45800, 'FontBlack-c0-ff'),
 ]
 
-POINTER_SEGMENTS = [ps for ps in SEGMENTS if isinstance(ps, PointerSegment)]
-for ps in POINTER_SEGMENTS:
-    print(ps)
-    copyfile('original/%s' % ps.filename, 'patched/%s' % ps.filename)
-    with open('patched/%s' % ps.filename, 'rb') as f:
-        ps.string = f.read()
+#POINTER_SEGMENTS = [ps for ps in SEGMENTS if isinstance(ps, PointerSegment)]
+#for ps in POINTER_SEGMENTS:
+#    print(ps)
+#    copyfile('original/%s' % ps.filename, 'patched/%s' % ps.filename)
+#    with open('patched/%s' % ps.filename, 'rb') as f:
+#        ps.string = f.read()
 
 CODE_SEGMENTS = [cs for cs in SEGMENTS if isinstance(cs, CodeSegment)]
 for cs in CODE_SEGMENTS:
@@ -76,6 +78,9 @@ with open('LA_inverse.tbl', 'rb') as f:
         #print(token, meaning)
         TABLE[token] = meaning
 
+with open(ORIGINAL_DATA_TRACK, 'rb') as f:
+    ORIGINAL_FILESTRING = f.read()
+
 
 for seg in SEGMENTS:
     if isinstance(seg, ImgSegment):
@@ -90,11 +95,11 @@ for seg in SEGMENTS:
     for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):
         #print(t.japanese.decode('shift-jis'))
         #print(t.english)
-        if t.english != b'':
+        if t.english != b'' or MAPPING_MODE:
             edited = True
 
     if edited:
-        print(seg.filename, "was edited")
+        #print(seg.filename, "was edited")
         copyfile('original/%s' % seg.filename, 'patched/%s' % seg.filename)
         edited_segments.append(seg)
         with open('patched/%s' % seg.filename, 'rb+') as f:
@@ -105,11 +110,11 @@ for seg in SEGMENTS:
 
             for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):
                 if not isinstance(seg, SjisSegment):
-                    print(t.japanese.decode('shift-jis'))
+                    #print(t.japanese.decode('shift-jis'))
                     #print(t.pointer, segment_with_pointer(t.pointer))
                     if t.pointer and diff != 0:
                         # TODO: Need to point to something much lower
-                        t.pointer = SegmentPointer(segment=segment_with_pointer(t.pointer),
+                        t.pointer = SegmentPointer(filestring=ORIGINAL_FILESTRING,
                                                    pointer_location=t.pointer,
                                                    text_location=t.location)
 
@@ -121,8 +126,9 @@ for seg in SEGMENTS:
                         if len(buf) >= 2:
                             #print(buf[0:2])
                             if buf[0:2] in TABLE:
+                                #print(seg.name)
                                 tabled_jp += TABLE[buf[0:2]]
-                                print(TABLE[buf[0:2]])
+                                #print(TABLE[buf[0:2]])
                                 buf = buf[2:]
                             else:
                                 #print(buf[0].to_bytes(1, 'little'))
@@ -134,14 +140,17 @@ for seg in SEGMENTS:
 
                     # Text replacements if necessary
                     if t.english == b'':
-                        continue
-                    print(tabled_jp)
+                        if MAPPING_MODE:
+                            t.english = b'A' * len(tabled_jp)
+                        else:
+                            continue
+                    #print(tabled_jp)
                     t.japanese = tabled_jp
 
                 else:
                     # Make the lowercase letters safe
                     safe_string = b''
-                    print("Processing a sjis string")
+                    #print("Processing a sjis string")
 
                     marks = [b'\x40', b'\x49', b'\x68', b'\x94', b'\x90', b'\x93', b'\x95', b'\x66',
                              b'\x69', b'\x6a', b'\x96', b'\x7b', b'\x43', b'\x5b', b'\x44', b'\x5e', ]
@@ -169,25 +178,38 @@ for seg in SEGMENTS:
                     # Reinsert the same string if no translation
 
                     if t.english == b'':
-                        t.english = t.japanese
-
-
+                        if MAPPING_MODE:
+                            t.english = b'A' * len(t.japanese)
+                            print(t.english)
+                        else:
+                            t.english = t.japanese
 
                 try:
                     i = seg_filestring.index(t.japanese)
-                    print(i, t.location)
+                    #print(i, t.location)
+                    # TODO: Is this having trouble replacing something at seg offset = 0?
+                    #print(t.english)
                     this_diff = len(t.english) - len(t.japanese)
                     seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
 
                     if t.pointer is not None and diff != 0:
-                        #print("About to try to edit pointer")
-                        t.pointer.edit(diff)
+                        print("About to try to edit pointer")
+                        new_bytes = t.pointer.edit(diff)
+                        # TODO: Take these new_bytes, write them to a new "segment" named after the location,
+                        # and add them to edited_segments
+
+                        if new_bytes is not None:
+                            pointer_segment = PointerSegment(t.pointer.location, t.pointer.location+2, "Pointer")
+                            with open('patched/%s' % pointer_segment.filename, 'wb') as g:
+                                g.write(new_bytes)
+                            edited_segments.append(pointer_segment)
+
                         print("Edited pointer")
                     diff += this_diff
 
                 except ValueError:
-                    for c in t.japanese:
-                        print(hex(c)),
+                    #for c in t.japanese:
+                    #    print(hex(c)),
                     print()
                     print(t.japanese, "(%s)" % t.japanese.decode('shift-jis'), "not found")
 
@@ -199,10 +221,10 @@ for seg in SEGMENTS:
             f.seek(0)
             f.write(seg_filestring)
 
-for p in POINTER_SEGMENTS:
-    with open('patched/%s' % p.filename, 'rb+') as f:
-        f.write(p.string)
-    edited_segments.append(p)
+#for p in POINTER_SEGMENTS:
+#    with open('patched/%s' % p.filename, 'rb+') as f:
+#        f.write(p.string)
+#    edited_segments.append(p)
 
 # Write the edit.lst file here instead of in rip_segments.py.
 # Use only the segments that got edited.
@@ -215,6 +237,7 @@ os.system("isopatch patched/edit.lst patched/LA7.iso /M1")
 
 """
     Try to undo the random other damage done by isopatch
+"""
 """
 with open('original/LA7.iso', 'rb+') as original:
     with open('patched/LA7.iso', 'rb+') as patched:
@@ -235,3 +258,4 @@ with open('original/LA7.iso', 'rb+') as original:
 
             if preamble == b'':
                 break
+"""
