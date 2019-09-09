@@ -7,6 +7,7 @@ import os
 from shutil import copyfile
 
 from rominfo import SEGMENTS, ORIGINAL_DATA_TRACK, ImgSegment, SjisSegment, PointerSegment, CodeSegment
+from rominfo import MERGED_STRINGS
 from asm import EDITS
 from romtools.dump import DumpExcel, SegmentPointer
 
@@ -81,6 +82,7 @@ with open('LA_inverse.tbl', 'rb') as f:
 with open(ORIGINAL_DATA_TRACK, 'rb') as f:
     ORIGINAL_FILESTRING = f.read()
 
+translations = Dump.get_translations("LA", include_blank=True)
 
 for seg in SEGMENTS:
     if isinstance(seg, ImgSegment):
@@ -92,7 +94,9 @@ for seg in SEGMENTS:
     #    continue
     edited = False
     print(seg.filename)
-    for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):
+
+    # Quickly run through the translations and see if any got edited. Otherwise we can skip
+    for t in [t for t in translations if seg.start <= t.total_location <= seg.stop]:
         #print(t.japanese.decode('shift-jis'))
         #print(t.english)
         if t.english != b'' or MAPPING_MODE:
@@ -108,15 +112,54 @@ for seg in SEGMENTS:
             diff = 0
             #last_offset = 0
 
-            for t in Dump.get_translations(seg.filename, sheet_name="LA", include_blank=True):
+            for t in [t for t in translations if seg.start <= t.total_location <= seg.stop]:
+                # If this string is to be merged, remove its pointer and give it to the destination string
+                if t.total_location in MERGED_STRINGS:
+                    src = t.total_location
+                    dest = MERGED_STRINGS[t.total_location]
+                    print(src, dest)
+
+                    t._temp_pointers = t.pointers
+                    t.pointers = None
+
+                    print(t.pointers)
+
+                # If this string is receiving another pointer, take it
+                if t.total_location in MERGED_STRINGS.values():
+                    for key in MERGED_STRINGS:
+                        if MERGED_STRINGS[key] == t.total_location:
+                            src = key
+                            break
+                    dest = t.total_location
+                    print(src, dest)
+
+                    # Get the other pointer
+                    other_t = [t for t in translations if t.total_location == src][0]
+                    if other_t._temp_pointers is not None:
+                        t.pointers += other_t._temp_pointers
+                        other_t._temp_pointers = None
+                    else:
+                        t.pointers += other_t.pointers
+                        other_t.pointers = None
+
+                    print(t.pointers)
+
+
+
+
+
                 if not isinstance(seg, SjisSegment):
                     #print(t.japanese.decode('shift-jis'))
                     #print(t.pointer, segment_with_pointer(t.pointer))
-                    if t.pointer and diff != 0:
-                        # TODO: Need to point to something much lower
-                        t.pointer = SegmentPointer(filestring=ORIGINAL_FILESTRING,
-                                                   pointer_location=t.pointer,
-                                                   text_location=t.location)
+                    if t.pointers and diff != 0:
+                        # Turn all the pointers (just locations) into SegmentPointers (objects with useful stuff)
+                        t._pointer_objs = []
+
+                        for pointer in t.pointers:
+                            t._pointer_objs.append(SegmentPointer(filestring=ORIGINAL_FILESTRING,
+                                                   pointer_location=pointer,
+                                                   text_location=t.location))
+                        t.pointers = t._pointer_objs
 
                     #for entry in TABLE:
                     #    print(entry, TABLE[entry])
@@ -144,6 +187,9 @@ for seg in SEGMENTS:
                             t.english = b'A' * len(tabled_jp)
                         else:
                             continue
+
+                    if t.english == b'[BLANK]':
+                        t.english = b''
                     #print(tabled_jp)
                     t.japanese = tabled_jp
 
@@ -176,7 +222,6 @@ for seg in SEGMENTS:
                     t.english = safe_string
 
                     # Reinsert the same string if no translation
-
                     if t.english == b'':
                         if MAPPING_MODE:
                             t.english = b'A' * len(t.japanese)
@@ -192,19 +237,20 @@ for seg in SEGMENTS:
                     this_diff = len(t.english) - len(t.japanese)
                     seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
 
-                    if t.pointer is not None and diff != 0:
-                        print("About to try to edit pointer")
-                        new_bytes = t.pointer.edit(diff)
-                        # TODO: Take these new_bytes, write them to a new "segment" named after the location,
-                        # and add them to edited_segments
+                    if t.pointers is not None and diff != 0:
+                        #print("About to try to edit pointer")
+                        for pointer in t.pointers:
+                            new_bytes = pointer.edit(diff)
+                            # TODO: Take these new_bytes, write them to a new "segment" named after the location,
+                            # and add them to edited_segments
 
-                        if new_bytes is not None:
-                            pointer_segment = PointerSegment(t.pointer.location, t.pointer.location+2, "Pointer")
-                            with open('patched/%s' % pointer_segment.filename, 'wb') as g:
-                                g.write(new_bytes)
-                            edited_segments.append(pointer_segment)
+                            if new_bytes is not None:
+                                pointer_segment = PointerSegment(pointer.location, pointer.location+2, "Pointer")
+                                with open('patched/%s' % pointer_segment.filename, 'wb') as g:
+                                    g.write(new_bytes)
+                                edited_segments.append(pointer_segment)
 
-                        print("Edited pointer")
+                            print("Edited pointer")
                     diff += this_diff
 
                 except ValueError:

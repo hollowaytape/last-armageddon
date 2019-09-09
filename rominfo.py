@@ -140,6 +140,10 @@ SEGMENTS = [
 
 ]
 
+MERGED_STRINGS = {
+    #0x4aea537: 0x4afab32,  # Toss
+}
+
 # Font is in iso at 0x5cd37a0-0x5cd7fe0.
 # (55473b0-)
 
