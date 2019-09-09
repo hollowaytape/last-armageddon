@@ -11,7 +11,7 @@ from rominfo import MERGED_STRINGS
 from asm import EDITS
 from romtools.dump import DumpExcel, SegmentPointer
 
-MAPPING_MODE = False
+MAPPING_MODE = True
 
 DUMP_XLS_PATH = 'LA_Text.xlsx'
 
@@ -50,7 +50,7 @@ for cs in CODE_SEGMENTS:
             if cs.start <= abs_address <= cs.stop:
                 print("Doing an edit")
                 local_address = abs_address - cs.start
-                print(local_address)
+                #print(local_address)
                 f.seek(local_address, 0)
                 f.write(new_code)
 
@@ -93,6 +93,7 @@ for seg in SEGMENTS:
     #elif isinstance(seg, PointerSegment):
     #    continue
     edited = False
+    print()
     print(seg.filename)
 
     # Quickly run through the translations and see if any got edited. Otherwise we can skip
@@ -112,17 +113,17 @@ for seg in SEGMENTS:
             diff = 0
             #last_offset = 0
 
-            for t in [t for t in translations if seg.start <= t.total_location <= seg.stop]:
+            for t in [t for t in translations if seg.start <= t.total_location < seg.stop]:
                 # If this string is to be merged, remove its pointer and give it to the destination string
                 if t.total_location in MERGED_STRINGS:
                     src = t.total_location
                     dest = MERGED_STRINGS[t.total_location]
-                    print(src, dest)
+                    #print(src, dest)
 
                     t._temp_pointers = t.pointers
                     t.pointers = None
 
-                    print(t.pointers)
+                    #print(t.pointers)
 
                 # If this string is receiving another pointer, take it
                 if t.total_location in MERGED_STRINGS.values():
@@ -131,7 +132,7 @@ for seg in SEGMENTS:
                             src = key
                             break
                     dest = t.total_location
-                    print(src, dest)
+                    #print(src, dest)
 
                     # Get the other pointer
                     other_t = [t for t in translations if t.total_location == src][0]
@@ -142,11 +143,7 @@ for seg in SEGMENTS:
                         t.pointers += other_t.pointers
                         other_t.pointers = None
 
-                    print(t.pointers)
-
-
-
-
+                    #print(t.pointers)
 
                 if not isinstance(seg, SjisSegment):
                     #print(t.japanese.decode('shift-jis'))
@@ -164,6 +161,8 @@ for seg in SEGMENTS:
                     #for entry in TABLE:
                     #    print(entry, TABLE[entry])
                     tabled_jp = b''
+                    #print(hex(t.total_location))
+                    #print(t.japanese)
                     buf = t.japanese
                     while buf:
                         if len(buf) >= 2:
@@ -174,7 +173,6 @@ for seg in SEGMENTS:
                                 #print(TABLE[buf[0:2]])
                                 buf = buf[2:]
                             else:
-                                #print(buf[0].to_bytes(1, 'little'))
                                 tabled_jp += TABLE[buf[0].to_bytes(1, 'little')]
                                 buf = buf[1:]
                         else:
@@ -192,6 +190,26 @@ for seg in SEGMENTS:
                         t.english = b''
                     #print(tabled_jp)
                     t.japanese = tabled_jp
+
+                    # A bunch of characters are in the font twice, so might need to try each variant...
+                    duplicate_mappings = [(b'\xe5', b'\xa6'),  # "wo"
+                                          (b'\xa6', b'\xe5'),
+                                          (b'\x65', b'\xa5'),  # degree mark (°)
+                                          (b'\xa5', b'\x65'),
+                                          (b'\xdf', b'\x9f'),  #... other degree mark (ﾟ)
+                                          (b'\x9f', b'\xdf'),
+                                          (b'\xe7', b'\xd9'),  # "ru"
+                                          (b'\xd9', b'\xe7'),
+                    ]
+
+                    t.backup_japanese = []
+
+                    for replacement in duplicate_mappings:
+                        backup = t.japanese
+                        backup = backup.replace(replacement[0], replacement[1])
+                        t.backup_japanese.append(backup)
+                    #print(t.japanese, t.backup_japanese)
+                    
 
                 else:
                     # Make the lowercase letters safe
@@ -225,15 +243,29 @@ for seg in SEGMENTS:
                     if t.english == b'':
                         if MAPPING_MODE:
                             t.english = b'A' * len(t.japanese)
-                            print(t.english)
+                            #print(t.english)
                         else:
                             t.english = t.japanese
 
+                # Look for the jp string (or the backukp), store it in i
+                i = None
                 try:
+                    #print(t.japanese)
+                    #print(seg_filestring.index(t.japanese))
                     i = seg_filestring.index(t.japanese)
-                    #print(i, t.location)
+                except ValueError:
+                    try:
+                        for bu in t.backup_japanese:
+                            if bu in seg_filestring:
+                                i = seg_filestring.index(bu)
+                                t.japanese = bu
+                                break
+
+                    except AttributeError:
+                        print("No backups")
+
+                if i is not None:
                     # TODO: Is this having trouble replacing something at seg offset = 0?
-                    #print(t.english)
                     this_diff = len(t.english) - len(t.japanese)
                     seg_filestring = seg_filestring.replace(t.japanese, t.english, 1)
 
@@ -241,8 +273,6 @@ for seg in SEGMENTS:
                         #print("About to try to edit pointer")
                         for pointer in t.pointers:
                             new_bytes = pointer.edit(diff)
-                            # TODO: Take these new_bytes, write them to a new "segment" named after the location,
-                            # and add them to edited_segments
 
                             if new_bytes is not None:
                                 pointer_segment = PointerSegment(pointer.location, pointer.location+2, "Pointer")
@@ -250,22 +280,24 @@ for seg in SEGMENTS:
                                     g.write(new_bytes)
                                 edited_segments.append(pointer_segment)
 
-                            print("Edited pointer")
+                            #print("Edited pointer")
                     diff += this_diff
-
-                except ValueError:
-                    #for c in t.japanese:
-                    #    print(hex(c)),
+                else:
                     print()
-                    print(t.japanese, "(%s)" % t.japanese.decode('shift-jis'), "not found")
+                    print(hex(t.total_location))
+                    print([hex(c)[2:] for c in t.japanese], "(%s)" % t.japanese.decode('shift-jis'), "not found")
+
+
 
             while diff < 0:
                 seg_filestring += b'\x00'
                 diff += 1
-            print(seg.filename)
+            #print(seg.filename)
             assert diff == 0
             f.seek(0)
             f.write(seg_filestring)
+
+            # e5 vs a6?
 
 #for p in POINTER_SEGMENTS:
 #    with open('patched/%s' % p.filename, 'rb+') as f:
