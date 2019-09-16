@@ -131,6 +131,7 @@ SEGMENTS = [
     Segment(0x4afc894, 0x4afc8c1, 'Jin3'),
     Segment(0x4afcc3e, 0x4afcc45, 'YesNo'),
     Segment(0x4afd2e8, 0x4afd31d, 'Jin4'),
+    Segment(0x4afd55c, 0x4afd573, "EquipMenuQuestion"),
     #PointerSegment(0x4a4a9ff, 0x4a4aa1d, 'EquipMenuPointers'),
     Segment(0x4afd9ad, 0x4afd9d5, 'EquipMenu'),
     Segment(0x4afdd59, 0x4afdd5f, 'Arimasen3'),

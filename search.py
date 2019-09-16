@@ -2,7 +2,7 @@
 
 import re
 
-search_string = 'こうげきは'
+search_string = 'だれがすてますか'
 
 if __name__ == "__main__":
 

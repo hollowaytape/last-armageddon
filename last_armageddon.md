@@ -239,6 +239,17 @@ Figure out how to get proper punctuation. Currently all the spaces just repeat t
 	3821: bcc +02 (90 02)
 	3823: inc $f9 (36 f9)
 
+Bytes that change as it looks at different text:
+206f (goes up by 2 when writing text, by 1 while writing the sprite)
+	206f comes from 2219
+	There are two instructions "inc $2219", let's get rid of one
+	Context is: 62651f851fee1922ee1922
+		Replace one of the ee1922's with eaeaea
+			This will work for a cursor hack. But the 12px font won't work - it only displays the left 8 pixels.
+
+41f4 = Orc position
+	Orc = 4f 72 63
+
 I think 00 00 00 00 is a divider between records, maybe there are no pointers?
 	TODO: Did I mess with the code that checks for 4 consecutive 00s?
 		No, it's probably pointers. Text seems to be ending at the right places, if not beginning at the right ones.
@@ -255,5 +266,26 @@ TODO: Need to edit stuff like commas and numbers in the font, to make them fit b
 	* Grey is color e (5e)
 	* Background is color 9 (59)
 
-TODO: How should I deal with text that stretches across sector boundaries?
-	Ideally I should be working with the plain data track. Can isopatch reinsert stuff that is longer than one sector? Let's try.
+# Audio Mapping
+"Actually, most of the VO in the first LoX game is ADPCM embedded in the data track, and not CD Audio ... but that's not really important.
+
+Replacing sample data in the Knight Rider HuCard might not be too horrible. There are only a couple of sane ways to store it in a HuCard.
+
+The "fun" would be in trying to figure out where it's stored, and how long it is.
+
+If you're running Mednafen, then you'd put a breakpoint on the Timer IRQ or the HBLANK IRQ, and trace through the code to find out where the pointer to the sound data is stored."
+	Need to do this on the ADPCM debug menu, that should help slice up the audio a bit
+	Stuff that has to do with the first sample (BASECAMP): b9 0a 00 26 00 30
+	b9 0a 00 26 00 00 30 (BASECAMP)
+	41 0a 00 10 00 00 80 (GAMEOVER)
+		Length: 4.11
+			Change 10 -> 08: Only loads 2.37 of the sample, but continues playing the leftovers of another sample
+	61 0a 00 48 00 00 40
+	32 0c 00 93 00 00 98
+	c5 0c 00 98 00 00 c0
+		First byte: Changes start time ("overlay index"? Finer than second byte)
+		Second byte: changing it totally changes what audio is played ("sector offset"?)
+		Middle byte: Number of sectors? Length?
+		Last two bytes seem to be the "write address" for the audio. Not sure why that would affect length
+			BASECAMP (00 30) writes to 3000, GAMEOVER (80) to 8000, etc
+			The length stuff may just be a coincidence.
