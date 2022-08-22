@@ -289,3 +289,11 @@ If you're running Mednafen, then you'd put a breakpoint on the Timer IRQ or the 
 		Last two bytes seem to be the "write address" for the audio. Not sure why that would affect length
 			BASECAMP (00 30) writes to 3000, GAMEOVER (80) to 8000, etc
 			The length stuff may just be a coincidence.
+
+## Finding the battle particles
+	* ha (00) = ca 00
+	* no (00) = c9 00
+	* comma = a4
+	* How do known strings get loaded? Let's see
+		* Harpy is at 421c, value is 48 61 72 70...
+		* Push to stack

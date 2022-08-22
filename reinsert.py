@@ -114,6 +114,16 @@ for seg in SEGMENTS:
             #last_offset = 0
 
             for t in [t for t in translations if seg.start <= t.total_location < seg.stop]:
+                # If it's a bestiary name, ensure the english is 12 chars long
+                if seg.filename == "BestiaryNames_0001270e.bin":
+                    print(t.english)
+                    if (len(t.english) > 12):
+                        t.english = t.english[0:12]
+                    elif (len(t.english) < 12):
+                        print("Padding it")
+                        t.english = t.english + b" "*(12 - (len(t.english)))
+                    print(t.english, len(t.english))
+
                 # If this string is to be merged, remove its pointer and give it to the destination string
                 if t.total_location in MERGED_STRINGS:
                     src = t.total_location
@@ -219,35 +229,56 @@ for seg in SEGMENTS:
                     marks = [b'\x40', b'\x49', b'\x68', b'\x94', b'\x90', b'\x93', b'\x95', b'\x66',
                              b'\x69', b'\x6a', b'\x96', b'\x7b', b'\x43', b'\x5b', b'\x44', b'\x5e', ]
 
-                    marks2 = [b'\x46', b'\x47', b'\x83', b'\x81', b'\x84', b'\x48', b'\x97']
+                    marks2 = [b'\x46', 
+                        b'\x47', 
+                        b'\x83',
+                        b'\x81', 
+                        b'\x84', 
+                        b'\x48', 
+                        b'\x97']
 
                     for c in t.english:
                         # Punctuation 1
                         if c < 0x30:
                             safe_string += marks[c-0x20]
+                            #safe_string += c.to_bytes(1, 'little')
+
                         # Numbers
                         elif c <= 0x39:
                             safe_string += (c + 0x1f).to_bytes(1, 'little')
+                            #safe_string += c.to_bytes(1, 'little')
+                            # 30 -> 4f
+
                         # Punctuation 2
                         elif c <= 0x40:
                             safe_string += marks2[c-0x3a]
+                            #safe_string += c.to_bytes(1, 'little')
+                            # <: 3c -> 83
+                            # :: 3a -> 46
+                            # >: 3e -> 84
+                            #safe_string += c.to_bytes(1, 'little')
+
                         # Uppercase
                         elif c <= 0x60:
                             safe_string += (c + 0x1f).to_bytes(1, 'little')
+
                         # Lowercase
                         else:
                             safe_string += (c + 0x20).to_bytes(1, 'little')
+
                     t.english = safe_string
 
                     # Reinsert the same string if no translation
                     if t.english == b'':
                         if MAPPING_MODE:
-                            t.english = b'A' * len(t.japanese)
+                            # Note: Disabling this for now since it's breaking tablets
+                            #t.english = b'A' * len(t.japanese)
                             #print(t.english)
+                            t.english = t.japanese
                         else:
                             t.english = t.japanese
 
-                # Look for the jp string (or the backukp), store it in i
+                # Look for the jp string (or the backup, store it in i
                 i = None
                 try:
                     #print(t.japanese)
@@ -292,7 +323,7 @@ for seg in SEGMENTS:
             while diff < 0:
                 seg_filestring += b'\x00'
                 diff += 1
-            #print(seg.filename)
+            print(seg.filename)
             assert diff == 0
             f.seek(0)
             f.write(seg_filestring)

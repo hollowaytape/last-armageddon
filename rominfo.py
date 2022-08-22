@@ -69,9 +69,9 @@ SEGMENTS = [
     # Some bestiary text before MainMenu, but it doesn't get used.
     # The later versions get used
     SjisSegment(0x1124b, 0x11276, 'MainMenu'),
-    Segment(0x1270e, 0x12efe, 'BestiaryNames'),
+    Segment(0x1270e, 0x12f00, 'BestiaryNames'),
     #Segment(0x14000, 0x14547, 'Debug'),
-    SjisSegment(0x21130, 0x2d000, 'Bestiary'),
+    SjisSegment(0x21138, 0x2d000, 'Bestiary'),
     ImgSegment(0x4a41b20, 0x4a42000, 'FontBlue-00-3f'),
     ImgSegment(0x4a42000, 0x4a42800, 'FontBlue-40-7f'),
     ImgSegment(0x4a42800, 0x4a43000, 'FontBlue-80-bf'),
@@ -108,6 +108,7 @@ SEGMENTS = [
     #PointerSegment(0x4a4a3d7, 0x4a4a3e7, 'StatUpsPointers'),
     Segment(0x4a4a3e7, 0x4a4a44e, 'StatUps'),
     CodeSegment(0x4a177b0, 0x4a177c0, 'SjisTextCode-1'),
+    CodeSegment(0x4a1780d, 0x4a17810, 'SjisTextCode-2_5'),
     CodeSegment(0x4a17815, 0x4a17860, 'SjisTextCode-2'),
     Segment(0x4a4aa1d, 0x4a4aa96, 'Abilities'),
     Segment(0x4a4b3dd, 0x4a4b777, 'Enemies'),
@@ -117,8 +118,10 @@ SEGMENTS = [
     Segment(0x4aea523, 0x4aea54b, 'Menu'),
     #PointerSegment(0x4afab19, 0x4afab27, 'Submenu1Pointers'),
     Segment(0x4afab27, 0x4afab46, 'Submenu1'),
-    Segment(0x4afb19b, 0x4afb1d7, "Submenu2"),
-    Segment(0x4afb1df, 0x4afb240, 'Submenu3'),
+    Segment(0x4afb19b, 0x4afb1ba, "Submenu2"),
+    Segment(0x4afb1be, 0x4afb1c5, "SubmenuOnOff"),
+    Segment(0x4afb1cb, 0x4afb1d7, "SubmenuSpeed"),
+    Segment(0x4afb1dd, 0x4afb240, 'Submenu3'),
     Segment(0x4afb5cd, 0x4afb5e0, 'SubmenuQuestions'),
     Segment(0x4afb5f1, 0x4afb627, "SubmenuDunno"),
     Segment(0x4afb62b, 0x4afb63e, "SumbenuCreate"),
@@ -131,13 +134,14 @@ SEGMENTS = [
     Segment(0x4afc894, 0x4afc8c1, 'Jin3'),
     Segment(0x4afcc3e, 0x4afcc45, 'YesNo'),
     Segment(0x4afd2e8, 0x4afd31d, 'Jin4'),
+    Segment(0x4afd34a, 0x4afd383, 'Jin5'),
     Segment(0x4afd55c, 0x4afd573, "EquipMenuQuestion"),
     #PointerSegment(0x4a4a9ff, 0x4a4aa1d, 'EquipMenuPointers'),
-    Segment(0x4afd9ad, 0x4afd9d5, 'EquipMenu'),
+    Segment(0x4afd9ad, 0x4afd9c6, 'EquipMenu1'),
+    Segment(0x4afd9ca, 0x4afd9d5, 'EquipMenu2'),
     Segment(0x4afdd59, 0x4afdd5f, 'Arimasen3'),
     Segment(0x4afdd9e, 0x4afde30, 'KeyItems'),
-    Segment(0x4afdfd6, 0x4afe000, 'Equipment1'),
-    Segment(0x4afe000, 0x4afe16d, 'Equipment2'),
+    Segment(0x4afdfd6, 0x4afe168, 'Equipment'),
 
 ]
 
@@ -156,9 +160,6 @@ MERGED_STRINGS = {
 #a3e7 points to 55513b0
 #so, pointer constant is 5546fc9.
 #The pointer to 5551367 will be 
-
-
-
 
 
 
