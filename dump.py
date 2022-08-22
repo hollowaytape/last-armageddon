@@ -157,8 +157,12 @@ if __name__ == '__main__':
                     Find the pointer table for this series of strings.
                 """
                 # Find the sequence of increases in location.
+                pointers_found = False
+
+                vals = []
                 diffs = []
                 for i, _ in enumerate(seg_sjis_strings):
+                    vals.append(seg_sjis_strings[i].loc)
                     if i+1 < len(seg_sjis_strings):
                         diffs.append(seg_sjis_strings[i+1].loc - seg_sjis_strings[i].loc)
                 #print(diffs)
@@ -172,44 +176,149 @@ if __name__ == '__main__':
                     cursor = s.start - LOOKBACK
                     track_vals = []
                     track_diffs = []
+                    odd_track_vals = []
+                    odd_track_diffs = []
+
                     for b in range(0, LOOKBACK, 2):
                         #print(track[cursor+b:cursor+b+2])
                         val = int.from_bytes(track[cursor+b:cursor+b+2], byteorder='little')
                         track_vals.append(val)
+                    for b in range(0, LOOKBACK, 2):
+                        #print(track[cursor+b:cursor+b+2])
+                        val = int.from_bytes(track[cursor+b+1:cursor+b+3], byteorder='little')
+                        odd_track_vals.append(val)
+
                     #print(track_vals)
                     for i, _ in enumerate(track_vals):
                         if i+1 < len(track_vals):
                             track_diffs.append(track_vals[i+1] - track_vals[i])
+
+                    for i, _ in enumerate(track_vals):
+                        if i+1 < len(odd_track_vals):
+                            odd_track_diffs.append(odd_track_vals[i+1] - odd_track_vals[i])
                 #print(track_diffs)
+                #print(odd_track_diffs)
 
                 if diffs == []:
                     # The pointer table can't be found
                     pass
                 else:
-                    print("diffs are", diffs)
+                    #print("diffs are", diffs)
                     ind = index_of_subsequence(track_diffs, diffs)
                     skip_first = False
                     if ind is None:
                         print("ind was none, trying again")
                         ind = index_of_subsequence(track_diffs, diffs[1:])
                         skip_first = True
+
                     if ind is None:
-                        print("Couldn't find the pointers for this segment")
+                        print("Couldn't find the pointers for this segment, trying odd lookback")
                         # TODO: Try using an odd lookback for these
+                        ind = index_of_subsequence(odd_track_diffs, diffs)
                     else:
-                        print(track_diffs)
-                        print([hex(thing) for thing in track_vals[ind:ind+len(diffs)]])
+                        #print(track_diffs)
+                        #print([hex(thing) for thing in track_vals[ind:ind+len(diffs)]])
                         table_start = s.start - LOOKBACK + (ind*2)
                         pointer_location = table_start
-                        # TODO: This is giving results shifted by two.
-                            # Menu.bin pointers should start at -e3 and last one should be -f3.
-                            # There are 9 strings... maybe the first one is pointed to from somewhere else?
-                            # Try skipping the first one entirely.
                         for sss in seg_sjis_strings:
                             if sss == seg_sjis_strings[0] and skip_first:
                                 continue
                             sss.pointer = pointer_location
                             pointer_location += 2
+                        pointers_found = True
+
+                    if ind is None:
+                        print("Couldn't find the pointers for this segment")
+                        pointers_found = False
+                    else:
+                        # TODO: No, this is running whenever all pointers are found, odd lookback or not
+                        # Found it with an odd lookback
+                        #print(track_diffs)
+                        #print([hex(thing) for thing in odd_track_vals[ind:ind+len(diffs)]])
+                        print(hex(s.start), hex(LOOKBACK), hex(ind*2))
+                        table_start = s.start - LOOKBACK + (ind*2)
+                        print(hex(table_start))
+                        # (Is this enough for the odd lookback thing?)
+                        #table_start += 1
+                        pointer_location = table_start
+                        for sss in seg_sjis_strings:
+                            if sss == seg_sjis_strings[0] and skip_first:
+                                continue
+                            sss.pointer = pointer_location
+                            print(hex(sss.loc), hex(sss.pointer))
+                            pointer_location += 2
+                        pointers_found = True
+
+
+                if not pointers_found and len(vals) > 1:
+                    # TODO: Some way to hardcode the poitner constant once we've found it?
+                    print("No pointers found - try a new approach")
+                    #print(vals)
+                    #print([hex(v) for v in track_vals])
+                    # x = num in vals
+                    # y = num in track_vals
+                    # Z = pointer_constant
+                    # Is there some Z for which every x+Z is present in y?
+                    if not s.pointer_constant:
+                        print("Trying to calculate pointer constant")
+                        best_pc = 0
+                        best_pc_string_count = 0
+                        use_odd_track = 0
+
+                        # for key items, it should be 0x4800
+                        for z in range(0x1000, 0xffff):
+                            current_pc_string_count = 0
+                            for x in vals:
+                                if x + z in track_vals:
+                                    current_pc_string_count += 1
+                            if current_pc_string_count > best_pc_string_count:
+                                best_pc = z
+                                best_pc_string_count = current_pc_string_count
+                                #print(hex(best_pc), best_pc_string_count)
+
+                        for z in range(0x1000, 0xffff):
+                            current_pc_string_count = 0
+                            for x in vals:
+                                if x + z in odd_track_vals:
+                                    current_pc_string_count += 1
+                            if current_pc_string_count > best_pc_string_count:
+                                best_pc = z
+                                best_pc_string_count = current_pc_string_count
+                                use_odd_track = True
+                                s.pointer_constant_odd_track = True
+                                #print(hex(best_pc), best_pc_string_count)
+
+                        print("Best pointer constant is " + hex(best_pc) + " with %s strings (of %s)" % (best_pc_string_count, len(vals)))
+                        if best_pc_string_count > (len(vals)) * 0.8:
+                            print("Good enough, let's assume that is the right pointer constant")
+                            print(s.filename, hex(best_pc))
+                            s.pointer_constant = best_pc
+                        else:
+                            print("(Not good enough)")
+                    else:
+                        print("We can use the existing pointer constant")
+
+                    # TODO: For Combat3, StatsMenu2, Combat1, PartyNames, Skills, StatUps, Abilities
+
+
+                    if (s.pointer_constant):
+                        for sss in seg_sjis_strings:
+                            lookback_start = s.start - LOOKBACK
+                            try:
+                                if (s.pointer_constant_odd_track):
+                                    pointer_location = (odd_track_vals.index(sss.loc + s.pointer_constant))*2 + lookback_start
+                                else:
+                                    pointer_location = (track_vals.index(sss.loc + s.pointer_constant))*2 + lookback_start
+                                
+                                sss.pointer = pointer_location
+                                #print(hex(sss.loc + s.start), hex(pointer_location))
+                            except ValueError:
+                                #print("Not found")
+                                pass
+
+                print("")
+
+
 
                 sjis_strings += seg_sjis_strings
 

@@ -66,6 +66,13 @@
 * Check out the mingled katakana/hiragana the translator pointed out
 	* Likely garbage - adjust the rominfo for these
 
+### Pointers
+* The pointer locator is built into the dumper, kind of inconvenient for when I have a partial dump going
+* Enemies pointers are not there, even though there's a really obvious pointer table at the top
+	* 4a4b2b1 - 4a4b3dd
+	* b3dd, b3e3, b3ec, b3f2
+	* 4a4b3dd, 4a4b3e3, 4a4b3ec, 4a4b3f2
+
 ### Tablets
 * What's up with these right now?
 * Maybe a different text display system? Doesn't seem to execute the SJIS code above

@@ -19,6 +19,9 @@ Dump = DumpExcel(DUMP_XLS_PATH)
 
 copyfile('original/LA7.iso', 'patched/LA7.iso')
 
+STRING_COUNT = 0
+TRANSLATED_STRING_COUNT = 0
+
 # Stuff to always include
 EDITED_IMG_SEGMENTS = [
     ImgSegment(0x4a41b20, 0x4a42000, 'FontBlue-00-3f'),
@@ -94,14 +97,18 @@ for seg in SEGMENTS:
     #    continue
     edited = False
     print()
-    print(seg.filename)
+    #print(seg.filename)
 
     # Quickly run through the translations and see if any got edited. Otherwise we can skip
     for t in [t for t in translations if seg.start <= t.total_location <= seg.stop]:
+        STRING_COUNT += 1
         #print(t.japanese.decode('shift-jis'))
         #print(t.english)
         if t.english != b'' or MAPPING_MODE:
             edited = True
+
+        if t.english != b'':
+            TRANSLATED_STRING_COUNT += 1
 
     if edited:
         #print(seg.filename, "was edited")
@@ -116,19 +123,21 @@ for seg in SEGMENTS:
             for t in [t for t in translations if seg.start <= t.total_location < seg.stop]:
                 # If it's a bestiary name, ensure the english is 12 chars long
                 if seg.filename == "BestiaryNames_0001270e.bin":
-                    print(t.english)
+                    #print(t.english)
                     if (len(t.english) > 12):
                         t.english = t.english[0:12]
                     elif (len(t.english) < 12):
-                        print("Padding it")
+                        #print("Padding it")
                         t.english = t.english + b" "*(12 - (len(t.english)))
-                    print(t.english, len(t.english))
+                    #print(t.english, len(t.english))
 
                 # If this string is to be merged, remove its pointer and give it to the destination string
+                #print(t.total_location)
+                #print(MERGED_STRINGS)
                 if t.total_location in MERGED_STRINGS:
                     src = t.total_location
                     dest = MERGED_STRINGS[t.total_location]
-                    #print(src, dest)
+                    print(src, dest)
 
                     t._temp_pointers = t.pointers
                     t.pointers = None
@@ -311,7 +320,8 @@ for seg in SEGMENTS:
                                     g.write(new_bytes)
                                 edited_segments.append(pointer_segment)
 
-                            #print("Edited pointer")
+                            print("Edited pointer")
+                            print(hex(pointer.location))
                     diff += this_diff
                 else:
                     print()
@@ -323,8 +333,8 @@ for seg in SEGMENTS:
             while diff < 0:
                 seg_filestring += b'\x00'
                 diff += 1
-            print(seg.filename)
-            assert diff == 0
+            #print(seg.filename)
+            assert diff == 0, seg.filename
             f.seek(0)
             f.write(seg_filestring)
 
@@ -343,28 +353,5 @@ with open('patched/edit.lst', 'w') as lst:
 
 os.system("isopatch patched/edit.lst patched/LA7.iso /M1")
 
-
-"""
-    Try to undo the random other damage done by isopatch
-"""
-"""
-with open('original/LA7.iso', 'rb+') as original:
-    with open('patched/LA7.iso', 'rb+') as patched:
-        while True:
-            preamble = original.read(16)
-            preamble2 = patched.read(16)
-            data = original.read(2048)
-            data2 = patched.read(2048)
-            mode_1_stuff = original.read(288)
-            mode_1_stuff2 = patched.read(288)
-
-            #print(data[:20])
-            #print(data2[:20])
-            if data[:20] != data2[:20]:
-                print(data[:20])
-                print(data2[:20])
-
-
-            if preamble == b'':
-                break
-"""
+percentage = (TRANSLATED_STRING_COUNT / STRING_COUNT) * 100.0
+print("%s / %s (%s%%) strings translated" % (TRANSLATED_STRING_COUNT, STRING_COUNT, percentage))
